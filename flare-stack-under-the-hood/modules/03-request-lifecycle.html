@@ -1,0 +1,454 @@
+<section class="module" id="module-3">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">请求的一生</h1>
+      <p class="module-subtitle">你在浏览器地址栏输入博客网址，按回车。0.5 秒后，完整的网页出现了。这 0.5 秒里，你的请求穿越了多少个「关卡」？</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Post Office Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">一封信的旅程</h2>
+
+        <p>想象你寄出一封信。它不会直接飞到收件人手里——它先到邮局分拣中心，按邮编分类，检查地址是否合法，再决定走哪条路线投递。</p>
+
+        <p>一个<span class="term" data-definition="HTTP 请求：浏览器与服务器之间的通信方式。你在浏览器输入网址或点击链接时，浏览器会向服务器发送一条 HTTP 请求，就像寄出一封信。">HTTP 请求</span>也是如此。从浏览器发出，要经过<span class="term" data-definition="CDN（Content Delivery Network，内容分发网络）：全球分布的服务器网络，把你的网站内容缓存在离用户最近的「驿站」里。用户访问时直接从最近的节点获取，不用绕远路到源服务器。">CDN</span>、<span class="term" data-definition="Worker：Cloudflare 的无服务器计算平台，一段运行在 CDN 边缘的代码。就像分散在全球各地的邮局分拣员，每个节点都能独立处理请求。">Worker</span>、路由层、<span class="term" data-definition="中间件（Middleware）：位于请求和处理程序之间的「安检关卡」。每个中间件负责检查或处理一项内容（比如身份、权限），然后决定是放行还是拒绝。">中间件</span>，最终变成你看到的网页。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F3E0;</div>
+            <h4 class="pattern-title">浏览器</h4>
+            <p class="pattern-desc">写信的人——发出请求</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F3EA;</div>
+            <h4 class="pattern-title">CDN 驿站</h4>
+            <p class="pattern-desc">附近的快递点——有缓存直接取</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F4E8;</div>
+            <h4 class="pattern-title">Worker 分拣中心</h4>
+            <p class="pattern-desc">按邮编分类——路由到正确的目的地</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F6E1;&#xFE0F;</div>
+            <h4 class="pattern-title">中间件安检</h4>
+            <p class="pattern-desc">逐项检查——身份、权限、频率</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5); color: white">&#x1F4E7;</div>
+            <h4 class="pattern-title">投递完成</h4>
+            <p class="pattern-desc">网页送达——用户看到结果</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">理解这条路径，你就能在出问题时知道该排查哪一层。是 CDN 没缓存？路由写错了？还是<span class="term" data-definition="D1：Cloudflare 的 SQLite 数据库服务，运行在边缘网络上。这是博客所有数据的最终存储位置。">数据库</span>查询太慢？</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — CODE TRANSLATION: Worker Entry (app-handler.ts)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">第一站：Worker 入口</h2>
+
+        <p>每个请求到达<span class="term" data-definition="Cloudflare Workers：Cloudflare 的无服务器计算平台，代码运行在离用户最近的 CDN 节点上。">Cloudflare Workers</span> 后，第一个执行的文件就是这个入口。它只有几行——职责是启动 Hono 应用并处理<span class="term" data-definition="i18n（internationalization）：国际化，让网站支持多种语言。这里用 Paraglide 库来实现中文/英文切换。">多语言</span>。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">import</span> { app } <span class="code-keyword">from</span> <span class="code-string">"@/lib/hono/routes"</span>;</span>
+<span class="code-line"><span class="code-keyword">import</span> { paraglideMiddleware } <span class="code-keyword">from</span> <span class="code-string">"@/paraglide/server"</span>;</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">export const</span> appWorkerHandler = {</span>
+<span class="code-line">  <span class="code-function">fetch</span>(request: Request, env: Env, ctx: ExecutionContext) {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">paraglideMiddleware</span>(request, () =&gt;</span>
+<span class="code-line">      app.<span class="code-function">fetch</span>(request, env, ctx)</span>
+<span class="code-line">    );</span>
+<span class="code-line">  },</span>
+<span class="code-line">};</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">导入 Hono 路由表——所有请求分发规则都在这里</p>
+              <p class="tl">导入多语言中间件——自动识别用户语言</p>
+              <p class="tl"></p>
+              <p class="tl">定义 Worker 的处理入口</p>
+              <p class="tl">每个请求都会调用这个 fetch 方法，传入请求体、环境变量和执行上下文</p>
+              <p class="tl">先经过多语言处理……</p>
+              <p class="tl">然后把请求交给 Hono 应用，由它决定路由到哪里</p>
+              <p class="tl">（Hono 内部会依次匹配路由规则）</p>
+              <p class="tl">——这就是全部代码。简单到不需要更多解释。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">极简入口</strong>
+            <p>整个入口只有 9 行代码。它不做任何业务逻辑，只负责「引路」——先处理语言，再交给路由表。这就是分层的力量：入口不需要知道后面发生了什么。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — DATA FLOW ANIMATION
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">追踪一封信的完整旅程</h2>
+
+        <p>点击「下一步」，跟随一个请求穿越所有关卡——从浏览器发出到最终看到网页。</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"用户在浏览器输入博客网址并按回车"},
+          {"highlight":"flow-actor-2","label":"请求到达 CDN 边缘节点，检查是否有缓存的页面","packet":true,"from":"flow-actor-1","to":"flow-actor-2"},
+          {"highlight":"flow-actor-3","label":"CDN 没有缓存，请求被转发到 Worker","packet":true,"from":"flow-actor-2","to":"flow-actor-3"},
+          {"highlight":"flow-actor-4","label":"Worker 接收请求，Hono 开始匹配路由规则","packet":true,"from":"flow-actor-3","to":"flow-actor-4"},
+          {"highlight":"flow-actor-4","label":"cacheMiddleware 检查 Cache API 是否有缓存"},
+          {"highlight":"flow-actor-4","label":"shieldMiddleware 验证路径是否合法"},
+          {"highlight":"flow-actor-5","label":"没有匹配到特殊路由，交给 TanStack Start 处理 SSR 渲染","packet":true,"from":"flow-actor-4","to":"flow-actor-5"},
+          {"highlight":"flow-actor-6","label":"SSR 渲染需要数据，查询 D1 数据库","packet":true,"from":"flow-actor-5","to":"flow-actor-6"},
+          {"highlight":"flow-actor-6","label":"D1 返回文章数据"},
+          {"highlight":"flow-actor-5","label":"TanStack 渲染完整的 HTML 页面"},
+          {"highlight":"flow-actor-1","label":"HTML 页面经过 CDN 缓存后返回浏览器，用户看到网页","packet":true,"from":"flow-actor-2","to":"flow-actor-1"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">&#x1F4BB;</div>
+              <span>浏览器</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">&#x26A1;</div>
+              <span>CDN</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">&#x1F4E8;</div>
+              <span>Worker</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">&#x1F5C2;</div>
+              <span>Hono</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">&#x1F3A8;</div>
+              <span>SSR</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-6">
+              <div class="flow-actor-icon">&#x1F5C4;&#xFE0F;</div>
+              <span>D1</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">点击「下一步」开始追踪</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">下一步</button>
+            <button class="btn flow-reset-btn">重新开始</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Hono routes.ts
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">分拣规则：Hono 路由表</h2>
+
+        <p>请求进入 Worker 后，<span class="term" data-definition="Hono：一个轻量级 Web 框架，负责根据 URL 路径把请求分发到对应的处理程序。就像邮局的分拣规则表——根据邮编决定信件去哪个区域。">Hono</span> 路由表就是分拣中心的规则手册。每条规则对应一个 URL 模式。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export const</span> app = <span class="code-keyword">new</span> <span class="code-function">Hono</span>&lt;{ Bindings: Env }&gt;();</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 1. 所有 GET 请求先检查缓存</span></span>
+<span class="code-line">app.<span class="code-function">get</span>(<span class="code-string">"*"</span>, cacheMiddleware);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 2. 公开 API 路由</span></span>
+<span class="code-line"><span class="code-keyword">const</span> publicApi = <span class="code-keyword">new</span> <span class="code-function">Hono</span>&lt;{ Bindings: Env }&gt;()</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/posts"</span>, postsListRoute)</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/post"</span>, postsDetailRoute)</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/tags"</span>, tagsRoute)</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/search"</span>, searchRoute);</span>
+<span class="code-line">app.<span class="code-function">route</span>(<span class="code-string">"/api"</span>, publicApi);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 3. RSS、sitemap 等站点文档</span></span>
+<span class="code-line">app.<span class="code-function">route</span>(<span class="code-string">"/"</span>, siteDocumentsRoute);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 4. 认证路由（带限流和人机验证）</span></span>
+<span class="code-line">app.<span class="code-function">get</span>(<span class="code-string">"/api/auth/*"</span>, baseMiddleware, forwardAuthRequest);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 5. 防护层：未知路径返回缓存的 404</span></span>
+<span class="code-line">app.<span class="code-function">all</span>(<span class="code-string">"*"</span>, shieldMiddleware);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 6. 兜底：交给 TanStack Start 渲染</span></span>
+<span class="code-line">app.<span class="code-function">all</span>(<span class="code-string">"*"</span>, (c) =&gt; {</span>
+<span class="code-line">  <span class="code-keyword">return</span> handler.<span class="code-function">fetch</span>(c.req.raw, {</span>
+<span class="code-line">    context: { env: c.env, executionCtx: <span class="code-function">getExecutionContext</span>(c) },</span>
+<span class="code-line">  });</span>
+<span class="code-line">});</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">创建 Hono 应用——这就是整个路由表</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 1：每个 GET 请求都先过一遍缓存中间件，看看有没有现成的响应</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 2：把 /api 下的公开接口按功能分组</p>
+              <p class="tl">/api/posts → 文章列表</p>
+              <p class="tl">/api/post → 文章详情</p>
+              <p class="tl">/api/tags → 标签</p>
+              <p class="tl">/api/search → 搜索</p>
+              <p class="tl">挂载到 /api 路径下</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 3：RSS feed、sitemap 等站点文档</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 4：登录/注册请求，先验证基础身份再转发</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 5：不属于上面任何路由的请求——用缓存的 404 页面拦截</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 6：最后的保底——全部交给 TanStack Start 做服务器渲染</p>
+              <p class="tl">把环境变量和执行上下文传给 TanStack</p>
+              <p class="tl">TanStack 会根据 URL 匹配前端路由，加载数据并渲染 HTML</p>
+              <p class="tl">（规则按顺序执行，匹配到就停止）</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — CODE TRANSLATION: Middleware Chain
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">安检关卡：中间件链</h2>
+
+        <p>路由匹配到之后，还需要通过一系列安全检查。中间件就像机场安检——每一层检查不同的东西，层层递进。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 注入数据库连接</span>
+<span class="code-line"><span class="code-keyword">export const</span> dbMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> db = <span class="code-function">getDb</span>(context.env);</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { db } });</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-comment">// 解析用户会话</span>
+<span class="code-line"><span class="code-keyword">export const</span> sessionMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([dbMiddleware])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> auth = <span class="code-function">getAuth</span>({ db: context.db, env: context.env });</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = <span class="code-keyword">await</span> auth.api.<span class="code-function">getSession</span>({</span>
+<span class="code-line">      headers: <span class="code-function">getRequestHeaders</span>(),</span>
+<span class="code-line">    });</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { auth, session } });</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-comment">// 要求登录</span>
+<span class="code-line"><span class="code-keyword">export const</span> authMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([sessionMiddleware])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!context.session) <span class="code-keyword">throw</span> <span class="code-function">createAuthError</span>();</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session: context.session } });</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-comment">// 要求管理员权限</span>
+<span class="code-line"><span class="code-keyword">export const</span> adminMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([authMiddleware])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ context, next }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (context.session.user.role !== <span class="code-string">"admin"</span>)</span>
+<span class="code-line">      <span class="code-keyword">throw</span> <span class="code-function">createPermissionError</span>();</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session: context.session } });</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">第一关：创建数据库连接中间件</p>
+              <p class="tl">在请求到达业务代码之前，先把数据库连接准备好</p>
+              <p class="tl">从环境变量获取数据库连接</p>
+              <p class="tl">把数据库连接注入到上下文中，传给下一个中间件</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二关：创建会话解析中间件</p>
+              <p class="tl">它依赖第一关——先确保数据库连接存在</p>
+              <p class="tl">从请求头中解析出当前用户的会话信息</p>
+              <p class="tl">用数据库连接初始化认证系统</p>
+              <p class="tl">查找这个请求对应的用户会话</p>
+              <p class="tl">从请求头中获取认证信息</p>
+              <p class="tl">把认证系统和会话信息注入上下文</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第三关：登录验证中间件</p>
+              <p class="tl">它依赖第二关——先确保会话已解析</p>
+              <p class="tl">从上下文取出会话</p>
+              <p class="tl">如果没有会话（未登录），直接拒绝——抛出认证错误</p>
+              <p class="tl">已登录则放行，把会话传下去</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第四关：管理员权限验证</p>
+              <p class="tl">它依赖第三关——必须先登录</p>
+              <p class="tl">从上下文取出已验证的会话</p>
+              <p class="tl">检查用户角色是否为管理员</p>
+              <p class="tl">不是管理员，直接拒绝——抛出权限错误</p>
+              <p class="tl">是管理员则放行</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F9ED;</div>
+          <div class="callout-content">
+            <strong class="callout-title">层层递进的安检</strong>
+            <p>四个中间件形成一条链：dbMiddleware → sessionMiddleware → authMiddleware → adminMiddleware。每一层在前一层的基础上增加检查。如果中间任何一层检查不通过，请求直接被拒绝，不会到达后面的代码。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — PATTERN CARDS: Request Path Layers
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">请求路径的六层关卡</h2>
+
+        <p>一个请求从发出到最终看到网页，至少要经过这六层。每一层解决一个特定的问题。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x26A1;</div>
+            <h4 class="pattern-title">CDN 缓存</h4>
+            <p class="pattern-desc">全球边缘节点缓存页面。命中则直接返回，速度最快。就像小区门口的快递柜——不用去邮局。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F4E6;</div>
+            <h4 class="pattern-title">Cache API</h4>
+            <p class="pattern-desc">Worker 内部的缓存层。CDN 没命中时，再查 Cache API。就像邮局内部的待发件架子。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F5C2;</div>
+            <h4 class="pattern-title">Hono 路由器</h4>
+            <p class="pattern-desc">根据 URL 路径分发请求到对应的处理程序。就像邮局的分拣机按邮编分类。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F6E1;&#xFE0F;</div>
+            <h4 class="pattern-title">中间件链</h4>
+            <p class="pattern-desc">安全检查——身份验证、权限检查、频率限制。层层递进，不通过就拒绝。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5); color: white">&#x1F3A8;</div>
+            <h4 class="pattern-title">TanStack SSR</h4>
+            <p class="pattern-desc">服务器端渲染：加载数据、生成完整 HTML。就像分拣员把信件内容抄写到信纸上。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid #89b4fa">
+            <div class="pattern-icon" style="background: #89b4fa; color: white">&#x1F5C4;&#xFE0F;</div>
+            <h4 class="pattern-title">D1 数据库</h4>
+            <p class="pattern-desc">最终的数据来源。所有文章、评论、配置都存在这里。就像邮局的总仓库。</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">请求从上到下逐层穿透，每一层都有可能提前返回。如果 CDN 命中缓存，后面的层完全不用执行。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的理解</h2>
+
+        <div class="quiz-container" id="quiz-module3">
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！在路由表中，/api/posts 被 postsListRoute 处理。如果返回 404，说明这个路由可能没有正确挂载，或者 URL 路径写错了。而 /post/my-slug 走的是文章详情路由，两者是不同的处理程序。"
+               data-explanation-wrong="不完全对。想想路由表的结构：/api/posts 是公开 API 路由，由 postsListRoute 处理；而 /post/my-slug 是文章详情路由。问题很可能出在 Hono 路由匹配这一层——要么路由没正确挂载，要么 URL 模式不匹配。">
+            <h3 class="quiz-question">用户访问 /api/posts 返回 404，但 /post/my-slug 正常。问题最可能在请求路径的哪个环节？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>CDN 缓存出了问题</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Hono 路由匹配——检查 postsListRoute 是否正确挂载在 /api/posts 下</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>D1 数据库连接失败</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="完全正确！中间件链按依赖顺序执行：先建立数据库连接，再解析会话，然后验证登录状态，最后检查管理员权限。每一层依赖前一层的结果——没有数据库就无法解析会话，没有会话就无法验证登录。"
+               data-explanation-wrong="顺序很重要。想想安检的逻辑：你得先有护照（数据库连接），才能查登机牌（会话），然后验证身份（登录），最后检查舱位（管理员权限）。每一层都依赖前一层的结果。">
+            <h3 class="quiz-question">请求访问管理后台 /admin/settings 时，TanStack 中间件链的执行顺序是什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>dbMiddleware → sessionMiddleware → authMiddleware → adminMiddleware</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>adminMiddleware → authMiddleware → sessionMiddleware → dbMiddleware</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>authMiddleware → dbMiddleware → adminMiddleware → sessionMiddleware</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！项目中对 404 和 500 等错误页面设置了短缓存策略（约 10 秒）。这意味着错误页面不会被长期缓存——10 秒后 CDN 会重新回源请求，获取正确的页面。这是防御性缓存策略的典型做法。"
+               data-explanation-wrong="理解缓存策略很重要。如果错误页面被长期缓存，用户就会长时间看到错误页面。这就是为什么项目对 404/500 等错误设置了短缓存时间——大约 10 秒后 CDN 就会重新回源。">
+            <h3 class="quiz-question">如果 CDN 缓存了一个错误页面（500），用户多久后能看到正确页面？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>需要手动清除缓存，否则永远看到错误页面</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>大约 10 秒后——错误页面的缓存策略很短，之后 CDN 会重新回源获取</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>需要等 24 小时，直到缓存自然过期</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

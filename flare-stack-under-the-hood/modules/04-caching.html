@@ -1,0 +1,548 @@
+<section class="module" id="module-4">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">三层缓存——为什么你的博客这么快</h1>
+      <p class="module-subtitle">一个博客文章页面可能需要查询数据库、生成目录、格式化内容。但为什么加载只需要几百毫秒？因为绝大多数请求根本不需要碰数据库。</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Library Reservation Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">图书馆预约系统</h2>
+
+        <p>想象你去图书馆借一本书。你不会每次都跑到总馆仓库去翻找——图书馆有一套预约系统，越靠前的环节越快。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F4DA;</div>
+            <h4 class="pattern-title">书架</h4>
+            <p class="pattern-desc">就在你眼前的书架上直接拿——最快</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F9D1;&#x200D;&#x1F4BC;</div>
+            <h4 class="pattern-title">前台预约系统</h4>
+            <p class="pattern-desc">问管理员，她查一下预约记录告诉你</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F4E6;</div>
+            <h4 class="pattern-title">仓库</h4>
+            <p class="pattern-desc">管理员打电话给仓库确认有没有货</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F3DB;&#xFE0F;</div>
+            <h4 class="pattern-title">总馆</h4>
+            <p class="pattern-desc">最后才需要从总馆调书——最慢</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">在我们的博客中，这四层对应着<span class="term" data-definition="CDN（Content Delivery Network，内容分发网络）：全球分布的服务器网络，把网站内容缓存在离用户最近的节点上。就像小区门口的快递柜，不用去远处的仓库取。">CDN 边缘缓存</span>、<span class="term" data-definition="Cache API：浏览器和 Cloudflare Workers 内置的缓存接口，可以存储和读取 HTTP 响应。就像图书馆前台的预约记录本，查起来很快但容量有限。">Cache API</span>、<span class="term" data-definition="KV（Key-Value）：Cloudflare 的全球分布式键值存储服务。数据以「键→值」的形式存储在全球各地，读取速度比数据库快得多。就像图书馆的仓库管理系统，按编号就能找到书的位置。">KV 缓存</span>，最后才是<span class="term" data-definition="D1：Cloudflare 的 SQLite 数据库服务，运行在边缘网络上。这是博客所有数据的最终存储位置，也是最慢的一层。">D1 数据库</span>。</p>
+
+        <p>这个模块就是带你走一遍这套预约系统——理解缓存是理解博客为什么快的关键。当你让 AI 帮你加缓存时，你需要知道加在哪一层。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — LAYER TOGGLE DEMO: Three Cache Layers
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">三层缓存，各司其职</h2>
+
+        <p>缓存不是只有一层，而是三层。每一层的存储位置、存储内容和失效方式都不同。点击切换查看每一层。</p>
+
+        <div class="layer-demo">
+          <div class="layer-tabs">
+            <button class="layer-tab active" onclick="showLayer('layer-cdn', this)">CDN 层</button>
+            <button class="layer-tab" onclick="showLayer('layer-cache-api', this)">Cache API 层</button>
+            <button class="layer-tab" onclick="showLayer('layer-kv', this)">KV 层</button>
+          </div>
+          <div class="layer-viewport">
+            <div class="layer" id="layer-cdn" style="display:block">
+              <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)">
+                <span style="font-size:2.5rem">&#x1F30D;</span>
+                <div>
+                  <strong style="font-size:var(--text-lg)">CDN 边缘缓存</strong>
+                  <div style="color:var(--color-text-secondary);font-size:var(--text-sm)">Cloudflare 全球节点</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-accent-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-accent)">&#x1F4CD; 离用户最近</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-success-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-success)">&#x26A1; 最快</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-surface-warm);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">&#x1F4E5; 最大范围</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">存储内容</span>
+                  <strong style="font-size:var(--text-sm)">完整的 HTML 页面</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">失效方式</span>
+                  <strong style="font-size:var(--text-sm)">Cloudflare Purge API</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">响应速度</span>
+                  <strong style="font-size:var(--text-sm);color:var(--color-success)">~10ms</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">比喻</span>
+                  <strong style="font-size:var(--text-sm)">书架上的书——直接拿</strong>
+                </div>
+              </div>
+            </div>
+            <div class="layer" id="layer-cache-api" style="display:none">
+              <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)">
+                <span style="font-size:2.5rem">&#x1F9D1;&#x200D;&#x1F4BC;</span>
+                <div>
+                  <strong style="font-size:var(--text-lg)">Cache API</strong>
+                  <div style="color:var(--color-text-secondary);font-size:var(--text-sm)">Worker 内部缓存</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-accent-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-accent)">&#x1F5C2; Worker 内部</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-success-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-success)">&#x1F680; 很快</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-surface-warm);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">&#x1F4E4; 单节点</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">存储内容</span>
+                  <strong style="font-size:var(--text-sm)">HTTP 响应对象</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">失效方式</span>
+                  <strong style="font-size:var(--text-sm)">cache.put / cache.match</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">响应速度</span>
+                  <strong style="font-size:var(--text-sm);color:var(--color-success)">~30ms</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">比喻</span>
+                  <strong style="font-size:var(--text-sm)">前台预约记录——查一下就知道</strong>
+                </div>
+              </div>
+            </div>
+            <div class="layer" id="layer-kv" style="display:none">
+              <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)">
+                <span style="font-size:2.5rem">&#x1F4E6;</span>
+                <div>
+                  <strong style="font-size:var(--text-lg)">KV 缓存</strong>
+                  <div style="color:var(--color-text-secondary);font-size:var(--text-sm)">应用层数据缓存</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-accent-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-accent)">&#x1F310; 全球分布</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-warning-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:#e69819">&#x1F406; 较快</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-surface-warm);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">&#x1F4CA; 精细控制</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">存储内容</span>
+                  <strong style="font-size:var(--text-sm)">JSON 数据（文章、标签等）</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">失效方式</span>
+                  <strong style="font-size:var(--text-sm)">版本号 bump / 精确删除</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">响应速度</span>
+                  <strong style="font-size:var(--text-sm);color:var(--color-success)">~50ms</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">比喻</span>
+                  <strong style="font-size:var(--text-sm)">仓库管理系统——按编号找</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="layer-description" id="layer-desc">CDN 缓存完整 HTML 页面，命中率最高。请求到达 CDN 时，如果有缓存直接返回，连 Worker 都不用启动。</p>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — CODE TRANSLATION: CacheService.get (Read-Through)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">核心机制：读穿缓存</h2>
+
+        <p><span class="term" data-definition="读穿缓存（Read-Through Cache）：一种缓存策略。先查缓存，有就直接返回；没有就查数据库，把结果存到缓存里再返回。就像前台管理员先翻预约本，没找到再打电话给仓库，查到后把结果记在预约本上。">读穿缓存</span>是最常用的缓存模式。先查缓存，命中就返回；没命中就去数据库查，顺便把结果存到缓存里。下次就不用查数据库了。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">get</span>&lt;T&gt;(</span>
+<span class="code-line">  context: BaseContext &amp; { executionCtx: <span class="code-type">ExecutionContext</span> },</span>
+<span class="code-line">  key: <span class="code-type">CacheKey</span>,</span>
+<span class="code-line">  schema: T,</span>
+<span class="code-line">  fetcher: () =&gt; <span class="code-type">Promise</span>&lt;z.infer&lt;T&gt;&gt;,</span>
+<span class="code-line">  options: { ttl?: <span class="code-type">Duration</span> } = {},</span>
+<span class="code-line">): <span class="code-type">Promise</span>&lt;z.infer&lt;T&gt;&gt; {</span>
+<span class="code-line">  <span class="code-keyword">const</span> { ttl = <span class="code-string">"1h"</span> } = options;</span>
+<span class="code-line">  <span class="code-keyword">const</span> serializedKey = <span class="code-function">serializeKey</span>(key);</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-comment">// 1. 先查 KV 缓存</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> kvData = <span class="code-keyword">await</span> env.KV.<span class="code-function">get</span>(serializedKey, <span class="code-string">"json"</span>)</span>
+<span class="code-line">    .<span class="code-function">catch</span>(<span class="code-comment">/* 容错 */</span>);</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">if</span> (kvData !== <span class="code-keyword">null</span>) {</span>
+<span class="code-line">    <span class="code-keyword">const</span> result = schema.<span class="code-function">safeParse</span>(kvData);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (result.success) <span class="code-keyword">return</span> result.data;</span>
+<span class="code-line">  }</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-comment">// 2. KV 未命中，回源数据库</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> data = <span class="code-keyword">await</span> <span class="code-function">fetcher</span>();</span>
+<span class="code-line">  <span class="code-keyword">if</span> (data === <span class="code-keyword">null</span>) <span class="code-keyword">return</span> data;</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-comment">// 3. 后台写入缓存，不阻塞响应</span></span>
+<span class="code-line">  context.executionCtx.<span class="code-function">waitUntil</span>(</span>
+<span class="code-line">    <span class="code-function">set</span>(context, key, JSON.<span class="code-function">stringify</span>(data), { ttl }),</span>
+<span class="code-line">  );</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">return</span> data;</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">定义缓存读取函数——这是整个缓存系统的核心</p>
+              <p class="tl">接收执行上下文（用于后台任务）、缓存键、数据校验规则、数据获取函数和选项</p>
+              <p class="tl">缓存键——用来标识存的是什么数据</p>
+              <p class="tl">schema——用 Zod 校验缓存数据的格式是否合法</p>
+              <p class="tl">fetcher——缓存未命中时，从哪里获取原始数据（通常是数据库查询）</p>
+              <p class="tl">可选配置：缓存存活时间，默认 1 小时</p>
+              <p class="tl">函数返回类型与 fetcher 的返回类型一致</p>
+              <p class="tl">默认缓存 1 小时</p>
+              <p class="tl">把缓存键序列化成字符串格式</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第一步：尝试从 KV 存储读取数据</p>
+              <p class="tl">用 .catch() 容错——即使 KV 挂了也不影响主流程</p>
+              <p class="tl"></p>
+              <p class="tl">如果 KV 里有数据……</p>
+              <p class="tl">用 Zod schema 验证数据格式是否正确（防止脏数据）</p>
+              <p class="tl">验证通过就直接返回缓存数据——不需要查数据库！</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二步：KV 没有数据，调用 fetcher 回源数据库</p>
+              <p class="tl">如果数据库也没有，直接返回 null</p>
+              <p class="tl"></p>
+              <p class="tl">第三步：把数据存入缓存——但不等待完成</p>
+              <p class="tl">waitUntil 告诉系统「后台帮我存，不用等存完再返回」</p>
+              <p class="tl">这样用户不用等缓存写入就能拿到响应</p>
+              <p class="tl"></p>
+              <p class="tl">把数据返回给调用者</p>
+              <p class="tl">（下次同样的请求就能从 KV 直接拿到了）</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：waitUntil 的魔法</strong>
+            <p><span class="term" data-definition="executionCtx.waitUntil()：Cloudflare Workers 的一个 API，告诉平台「这个操作很重要，请在后台完成它，但不用等它结束再返回响应」。就像餐厅先上菜，后厨再慢慢洗碗。">executionCtx.waitUntil()</span> 告诉 Cloudflare「这个操作很重要，请在后台完成它，但不用等它结束再返回响应」。这就是为什么缓存写入不会拖慢用户看到的响应速度。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Version-Based Invalidation
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">最难的问题：缓存失效</h2>
+
+        <p>「计算机科学只有两个难题：缓存失效和命名。」—— Phil Karlton。这个项目用<span class="term" data-definition="版本号失效（Version-Based Invalidation）：一种缓存失效策略。给每组缓存数据分配一个版本号，版本号变化后，所有旧版本的缓存 key 自然失效。就像图书馆换了新系统后，旧的预约编号全部作废。">版本号失效</span>优雅地解决了缓存失效问题。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 读取当前版本号</span>
+<span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">getVersion</span>(context, namespace) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> key = <span class="code-string">`ver:${namespace}`</span>;</span>
+<span class="code-line">  <span class="code-keyword">const</span> v = <span class="code-keyword">await</span> context.env.KV.<span class="code-function">get</span>(key)</span>
+<span class="code-line">    .<span class="code-function">catch</span>(<span class="code-comment">/* 容错 */</span>);</span>
+<span class="code-line">  <span class="code-keyword">if</span> (v &amp;&amp; !Number.<span class="code-function">isNaN</span>(Number.<span class="code-function">parseInt</span>(v))) {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-string">`v${v}`</span>;</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> <span class="code-string">"v1"</span>;</span>
+<span class="code-line">}</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 版本号 +1，旧缓存全部作废</span></span>
+<span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">bumpVersion</span>(context, namespace) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> key = <span class="code-string">`ver:${namespace}`</span>;</span>
+<span class="code-line">  <span class="code-keyword">const</span> current = <span class="code-keyword">await</span> context.env.KV.<span class="code-function">get</span>(key)</span>
+<span class="code-line">    .<span class="code-function">catch</span>(<span class="code-comment">/* 容错 */</span>);</span>
+<span class="code-line">  <span class="code-keyword">let</span> next = 1;</span>
+<span class="code-line">  <span class="code-keyword">if</span> (current) {</span>
+<span class="code-line">    <span class="code-keyword">const</span> parsed = Number.<span class="code-function">parseInt</span>(current);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!Number.<span class="code-function">isNaN</span>(parsed)) next = parsed + 1;</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">await</span> context.env.KV.<span class="code-function">put</span>(key, next.<span class="code-function">toString</span>());</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">获取某个缓存命名空间的当前版本号</p>
+              <p class="tl">版本号存在 KV 里，键名格式是 ver:命名空间</p>
+              <p class="tl">从 KV 读取版本号字符串</p>
+              <p class="tl">即使 KV 出错也不会崩溃（catch 容错）</p>
+              <p class="tl">如果读到了有效的版本号……</p>
+              <p class="tl">返回「v3」「v5」这样的格式，方便拼到缓存 key 里</p>
+              <p class="tl">如果没读到或格式不对</p>
+              <p class="tl">默认返回 v1</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">升级版本号——这是魔法发生的地方！</p>
+              <p class="tl">同一个键名 ver:命名空间</p>
+              <p class="tl">读取当前版本号</p>
+              <p class="tl">容错处理</p>
+              <p class="tl">默认从 1 开始</p>
+              <p class="tl">如果当前有版本号……</p>
+              <p class="tl">解析成数字</p>
+              <p class="tl">有效就 +1（比如 v3 变成 4）</p>
+              <p class="tl">写回 KV——版本号升级完成</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F9E9;</div>
+          <div class="callout-content">
+            <strong class="callout-title">为什么版本号这么巧妙？</strong>
+            <p>缓存 key 包含版本号（如 <code>v3/post/hello-world</code>）。bumpVersion 把版本号从 3 变成 4，所有以 v3 开头的旧 key 永远不会被查到——它们等效于「不存在」。不需要逐个删除，一次 bump 就能让整个命名空间的所有旧缓存失效。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — DATA FLOW ANIMATION: Request Through Cache Layers
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">追踪一次请求的缓存之旅</h2>
+
+        <p>点击「下一步」，看一个博客页面请求如何穿越三层缓存——绝大多数请求会在前三层就得到结果。</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"用户请求博客文章页面 /post/hello-world"},
+          {"highlight":"flow-actor-2","label":"检查 CDN 边缘缓存 —— 如果命中，直接返回 HTML（最快路径）","packet":true,"from":"flow-actor-1","to":"flow-actor-2"},
+          {"highlight":"flow-actor-3","label":"CDN 未命中，请求到达 Worker，检查 Cache API","packet":true,"from":"flow-actor-2","to":"flow-actor-3"},
+          {"highlight":"flow-actor-4","label":"Cache API 未命中，进入业务层，检查 KV 缓存","packet":true,"from":"flow-actor-3","to":"flow-actor-4"},
+          {"highlight":"flow-actor-4","label":"KV 缓存中有数据（cache hit），直接返回"},
+          {"highlight":"flow-actor-5","label":"KV 也未命中（cache miss），查询 D1 数据库","packet":true,"from":"flow-actor-4","to":"flow-actor-5"},
+          {"highlight":"flow-actor-5","label":"D1 返回文章数据（原始数据）"},
+          {"highlight":"flow-actor-4","label":"后台用 waitUntil 把数据写入 KV 缓存（不影响返回速度）","packet":true,"from":"flow-actor-5","to":"flow-actor-4"},
+          {"highlight":"flow-actor-1","label":"数据返回，CDN 和 Cache API 也缓存一份，用户看到页面","packet":true,"from":"flow-actor-4","to":"flow-actor-1"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">&#x1F4BB;</div>
+              <span>浏览器</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">&#x1F30D;</div>
+              <span>CDN</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">&#x1F5C2;</div>
+              <span>Cache API</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">&#x1F4E6;</div>
+              <span>KV</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">&#x1F5C4;&#xFE0F;</div>
+              <span>D1</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">点击「下一步」开始追踪</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">下一步</button>
+            <button class="btn flow-reset-btn">重新开始</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — CODE TRANSLATION: Service Layer Using Cache
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">组合在一起：服务层如何使用缓存</h2>
+
+        <p>上面看到的<span class="term" data-definition="CacheService：项目中的缓存服务模块，封装了 KV 读写、版本号管理和缓存失效逻辑。所有功能模块通过它来访问缓存，不用关心底层实现。">CacheService</span> 和版本号机制，组合起来就是这样的：</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">export async function</span> <span class="code-function">findPostBySlug</span>(context, slug) {
+  <span class="code-comment">// 1. 获取当前缓存版本号</span>
+  <span class="code-keyword">const</span> version = <span class="code-keyword">await</span> CacheService
+    .<span class="code-function">getVersion</span>(context, <span class="code-string">"posts:detail"</span>);
+  <span class="code-comment">// 2. 将版本号拼入缓存 key</span>
+  <span class="code-keyword">const</span> cacheKey = [version, <span class="code-string">"post"</span>, slug];
+
+  <span class="code-comment">// 3. 读穿缓存：先查 KV，miss 时回源数据库</span>
+  <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> CacheService.<span class="code-function">get</span>(
+    context,
+    cacheKey,
+    PostWithTocSchema,
+    <span class="code-keyword">async</span> () => {
+      <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostRepo
+        .<span class="code-function">findPostBySlug</span>(context.db, slug);
+      <span class="code-keyword">if</span> (!post) <span class="code-keyword">return null</span>;
+      <span class="code-comment">// ... 处理高亮、目录生成 ...</span>
+      <span class="code-keyword">return</span> processedPost;
+    },
+  );
+  <span class="code-keyword">return</span> post;
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">通过 slug（URL 中的文章标识）查找文章——这是最常用的操作</p>
+              <p class="tl"></p>
+              <p class="tl">先拿到文章详情的当前缓存版本号（比如 v3）</p>
+              <p class="tl">从 KV 存储读取版本号</p>
+              <p class="tl"></p>
+              <p class="tl">把版本号拼进缓存 key：[&quot;v3&quot;, &quot;post&quot;, &quot;hello-world&quot;]</p>
+              <p class="tl">版本号变化后，旧 key 永远不会被查到</p>
+              <p class="tl"></p>
+              <p class="tl">调用 CacheService.get——自动处理缓存读写</p>
+              <p class="tl">传入缓存键</p>
+              <p class="tl">传入数据校验 schema</p>
+              <p class="tl">传入 fetcher——只有缓存未命中时才会执行</p>
+              <p class="tl">从数据库查询文章</p>
+              <p class="tl">如果数据库也没有，返回 null</p>
+              <p class="tl">有文章的话处理高亮、生成目录</p>
+              <p class="tl">返回处理好的文章（会被自动缓存）</p>
+              <p class="tl"></p>
+              <p class="tl">返回文章数据——调用者完全不知道背后有缓存</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — PATTERN CARDS: Three Invalidation Strategies
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">三种缓存失效策略</h2>
+
+        <p>缓存写入容易，失效才是难题。这个项目使用三种策略，每种适用于不同的场景。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F504;</div>
+            <h4 class="pattern-title">版本号 bump</h4>
+            <p class="pattern-desc">一次 bump 就能让整个命名空间的所有旧缓存失效。不知道有哪些 key 也没关系。用于文章发布、全站刷新等场景。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F3AF;</div>
+            <h4 class="pattern-title">精确 key 删除</h4>
+            <p class="pattern-desc">直接删除指定的缓存 key。精准、高效，但需要知道要删哪个 key。用于删除评论、更新单篇等场景。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F30D;</div>
+            <h4 class="pattern-title">CDN Purge API</h4>
+            <p class="pattern-desc">调用 Cloudflare API 清除全球 CDN 缓存。代价最大但覆盖最全，用于站点级更新、域名切换等场景。</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">实际更新文章时，三种策略会组合使用：先 bump 版本号让 KV 缓存失效，再调用 CDN Purge API 清除边缘缓存。这就是为什么管理员更新文章后，全球用户很快就能看到最新版本。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 8 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的理解</h2>
+
+        <div class="quiz-container" id="quiz-module4">
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！三层缓存中，CDN 层最可能没有被正确失效。KV 版本号 bump 和 Cache API 的失效通常是自动化的（服务端代码控制），但 CDN 缓存需要额外调用 Cloudflare Purge API 来清除。如果 Purge 请求失败或配置有误，全球用户就会长时间看到旧版本。"
+               data-explanation-wrong="想想三层缓存的控制方式有什么不同。KV 和 Cache API 的失效是服务端代码直接控制的（bumpVersion、cache.put），但 CDN 缓存在 Cloudflare 的全球节点上，需要通过专门的 API 来清除。哪一层最容易「漏掉」？">
+            <h3 class="quiz-question">管理员更新了一篇文章，但用户仍然看到旧版本。三层缓存中，哪一层最可能没有被正确失效？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>CDN 层——Purge API 可能没有成功调用</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>KV 层——版本号可能没有被 bump</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>D1 数据库——数据可能没有写入成功</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly! 一次 bumpVersion 调用就能让整个命名空间的所有旧缓存 key 失效——不需要知道有哪些 key，也不需要遍历删除。这就像图书馆换了新系统后，旧的预约编号全部自动作废，不需要一个个去注销。"
+               data-explanation-wrong="想想版本号是怎么拼进缓存 key 的。每个 key 都包含版本号前缀（如 v3/post/hello-world）。当版本号变成 4，所有 v3 开头的 key 会怎样？">
+            <h3 class="quiz-question">版本号失效相比逐个删除缓存 key，最大的优势是什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>版本号失效更节省 KV 存储空间</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>一次 bump 就能让整个命名空间的所有旧 key 失效，不需要知道有哪些 key</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>版本号可以设置更长的缓存过期时间</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！CacheService.get 的 KV.get 调用后面有 .catch() 容错处理。如果 KV 不可用，会静默失败并 fallthrough 到 fetcher 回源数据库。用户可能感觉稍慢（因为少了缓存加速），但功能完全正常。"
+               data-explanation-wrong="看看 CacheService.get 代码中的 .catch() 处理。当 KV.get 失败时，错误被 catch 住了，kvData 变量是 undefined，代码会继续执行到 fetcher()。这说明什么？">
+            <h3 class="quiz-question">如果 KV 服务暂时不可用，findPostBySlug 还能工作吗？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>能——KV.get 有 .catch() 容错，会 fallthrough 到 fetcher 回源数据库</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>不能——KV 是必需的，没有缓存就无法工作</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>能——但会返回错误页面告诉用户稍后重试</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

@@ -1,0 +1,416 @@
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">代码库的组织方式</h1>
+      <p class="module-subtitle">如果你让 AI 帮你改博客的评论功能，它应该改哪个文件？如果你说「改评论那个文件夹里的代码」，你已经比大多数人强了。但具体是哪个文件呢？</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Library Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">图书馆的秘密</h2>
+
+        <p>想象你走进一座图书馆。你不会看到一个巨大的房间把所有书胡乱堆在一起——文学区、科学区、历史区，每个区域有自己的书架排列方式和管理员。</p>
+
+        <p>代码库也是这样。博客的每个<span class="term" data-definition="功能模块（Feature Module）：代码库中按业务功能划分的独立单元，比如「文章」「评论」「搜索」。每个功能模块有自己的文件夹，包含相关的代码、数据库查询和界面组件。">功能模块</span>——文章、评论、搜索——就像图书馆的一个分区，有自己独立的空间。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F4DA;</div>
+            <h4 class="pattern-title">分区 = 功能模块</h4>
+            <p class="pattern-desc">每个功能一个文件夹，互不干扰</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F4CB;</div>
+            <h4 class="pattern-title">书架 = 数据层</h4>
+            <p class="pattern-desc">存放和检索原始资料</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x2699;&#xFE0F;</div>
+            <h4 class="pattern-title">管理员 = 服务层</h4>
+            <p class="pattern-desc">判断该怎么做，协调各项工作</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F4DD;</div>
+            <h4 class="pattern-title">前台 = API 层</h4>
+            <p class="pattern-desc">接收请求，转发给对应区域</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">理解这个结构，你就能精准地告诉 AI：「把这段逻辑放在<span class="term" data-definition="服务层：负责业务逻辑和流程编排的代码层。它决定「该怎么做」——比如先查缓存、再查数据库、然后转换数据格式。">服务层</span>」，而不是让它乱放。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — VISUAL FILE TREE
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">走进「文章」分区</h2>
+
+        <p>让我们打开<span class="term" data-definition="Posts 功能模块：处理博客文章的核心功能模块，包括文章的创建、编辑、发布、查询等全部操作。">文章功能</span>的文件夹，看看里面的结构：</p>
+
+        <div class="file-tree animate-in">
+          <div class="ft-folder open">
+            <span class="ft-name">features/posts/</span>
+            <span class="ft-desc">文章功能的全部代码</span>
+            <div class="ft-children">
+              <div class="ft-folder">
+                <span class="ft-name">data/</span>
+                <span class="ft-desc">数据层：纯<span class="term" data-definition="数据库查询：从数据库中检索数据的操作。就像在图书馆的电脑上搜索「有没有某本书」，然后从书架上把它找出来。">数据库查询</span></span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.data.ts</span>
+                    <span class="ft-desc">文章的数据库操作（查、改、删）</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">services/</span>
+                <span class="ft-desc">服务层：业务逻辑 + <span class="term" data-definition="缓存编排：决定何时使用缓存、何时回源查询数据库、何时更新缓存的协调逻辑。就像管理员决定「先查卡片目录，没有再去书架找」。">缓存编排</span></span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.service.ts</span>
+                    <span class="ft-desc">核心业务逻辑，调用数据层和缓存</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">schema/</span>
+                <span class="ft-desc">数据结构定义</span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.schema.ts</span>
+                    <span class="ft-desc"><span class="term" data-definition="Zod：一个数据验证库，用来检查数据格式是否正确。就像机场安检——不符合规格的东西会被拦下来。">Zod</span> 验证 + <span class="term" data-definition="缓存键（Cache Key）：用于标识缓存数据的唯一标签。就像图书馆借书卡上的索书号，通过它可以精确定位到缓存的内容。">缓存键</span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">api/</span>
+                <span class="ft-desc">API 层：<span class="term" data-definition="Server Function：在服务器端执行的函数，前端代码可以直接调用它，就像调用本地函数一样。它负责接收前端请求并转发给服务层。">Server Functions</span></span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.queries.ts</span>
+                    <span class="ft-desc">查询（读操作）</span>
+                  </div>
+                  <div class="ft-file">
+                    <span class="ft-name">posts.mutations.ts</span>
+                    <span class="ft-desc">变更（写操作）</span>
+                  </div>
+                  <div class="ft-folder">
+                    <span class="ft-name">hono/</span>
+                    <span class="ft-desc"><span class="term" data-definition="Hono 路由：面向公众的 HTTP 接口，不需要登录就能访问。就像图书馆的公共查询终端，任何人都可以用。">Hono</span> 公开路由</span>
+                    <div class="ft-children">
+                      <div class="ft-file"><span class="ft-name">posts.list.route.ts</span><span class="ft-desc">文章列表接口</span></div>
+                      <div class="ft-file"><span class="ft-name">posts.detail.route.ts</span><span class="ft-desc">文章详情接口</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">components/</span>
+                <span class="ft-desc"><span class="term" data-definition="React 组件：可复用的界面构建块，就像乐高积木——每个组件负责一小块界面，组合起来构成完整的页面。">React 组件</span></span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">queries/</span>
+                <span class="ft-desc"><span class="term" data-definition="TanStack Query：一个管理服务器数据获取的库。它自动处理缓存、重新请求、错误重试等，让前端代码更简洁。">TanStack Query</span> hooks</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">workflows/</span>
+                <span class="ft-desc"><span class="term" data-definition="Workflow：一种可以暂停和重试的自动化流程。它会记住每一步的进度，失败后可以从断点恢复，不需要从头开始。">Workflow</span> 持久化流程</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">同样的结构也出现在 <code>features/comments/</code>、<code>features/tags/</code> 等每一个功能模块中。一旦你理解了一个，就理解了全部。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — ICON-LABEL ROWS: Three-Layer Architecture
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">三层架构</h2>
+
+        <p>每个功能模块的核心代码都遵循同一套三层结构。就像图书馆的每个分区都有书架区、管理室和借阅台。</p>
+
+        <div class="icon-rows animate-in">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#x1F5C4;&#xFE0F;</div>
+            <div>
+              <strong>数据层（data/）</strong>
+              <p>只做一件事：<span class="term" data-definition="数据库（Database）：有组织地存储数据的系统，就像图书馆的书库。数据层通过 Drizzle ORM（一种操作数据库的工具）来读写数据。">数据库</span>查询。不关心缓存，不关心业务逻辑，纯粹的读写操作。</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-2)">&#x2699;&#xFE0F;</div>
+            <div>
+              <strong>服务层（service）</strong>
+              <p>编排业务逻辑 + 缓存策略。决定「先查缓存还是直接查数据库」「数据要不要做额外处理」。</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-4)">&#x1F50C;</div>
+            <div>
+              <strong>API 层（api/）</strong>
+              <p><span class="term" data-definition="请求入口：接收外部请求的地方，就像图书馆的借阅台——读者在这里提交借书请求，工作人员把请求转发给对应的分区。">请求入口</span>。接收<span class="term" data-definition="HTTP 请求：浏览器与服务器之间的通信方式。当你在浏览器中输入网址或点击链接时，浏览器就会向服务器发送一个 HTTP 请求。">HTTP 请求</span>，验证参数，然后转发给服务层。它是「薄薄的」一层——几乎不包含任何业务逻辑。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-8)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：关注点分离</strong>
+            <p><span class="term" data-definition="关注点分离（Separation of Concerns）：一个软件设计原则——每个模块只负责一件事情。就像餐厅里厨师不负责端菜、服务员不负责炒菜一样，每层只做自己的事，改动时不会互相影响。">关注点分离</span>——每个代码层只做自己的事。数据层不管缓存，API 层不管业务逻辑。改动一层不会影响其他层。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Service Layer
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">服务层：缓存与业务的指挥官</h2>
+
+        <p>这是文章模块中「根据网址查找文章」的服务层代码。注意它如何协调<span class="term" data-definition="缓存（Cache）：临时存储的数据副本，用于加速访问。就像把常用的书放在前台而非书库里，取用更快。">缓存</span>和数据库——先查缓存，缓存没有才去数据库。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">findPostBySlug</span>(</span>
+<span class="code-line">  context: Context,</span>
+<span class="code-line">  slug: <span class="code-function">string</span>,</span>
+<span class="code-line">) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> version = <span class="code-keyword">await</span> CacheService.<span class="code-function">getVersion</span>(context, <span class="code-string">"posts:detail"</span>);</span>
+<span class="code-line">  <span class="code-keyword">const</span> cacheKey = [version, <span class="code-string">"post"</span>, slug] <span class="code-keyword">as const</span>;</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> CacheService.<span class="code-function">get</span>(</span>
+<span class="code-line">    context,</span>
+<span class="code-line">    cacheKey,</span>
+<span class="code-line">    PostWithTocSchema,</span>
+<span class="code-line">    <span class="code-keyword">async</span> () =&gt; {</span>
+<span class="code-line">      <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostRepo.<span class="code-function">findPostBySlug</span>(context.db, slug);</span>
+<span class="code-line">      <span class="code-keyword">if</span> (!post) <span class="code-keyword">return null</span>;</span>
+<span class="code-line">      <span class="code-keyword">if</span> (post.publicContentJson) {</span>
+<span class="code-line">        <span class="code-keyword">const</span> { publicContentJson, ...rest } = post;</span>
+<span class="code-line">        <span class="code-keyword">const</span> content = contentSchema.<span class="code-function">parse</span>(publicContentJson);</span>
+<span class="code-line">        <span class="code-keyword">return</span> { ...rest, content, toc: <span class="code-function">generateTocFromContent</span>(content) };</span>
+<span class="code-line">      }</span>
+<span class="code-line">      <span class="code-keyword">const</span> content = <span class="code-keyword">await</span> <span class="code-function">highlightCodeBlocks</span>(post.contentJson);</span>
+<span class="code-line">      <span class="code-keyword">const</span> { contentJson, ...rest } = post;</span>
+<span class="code-line">      context.executionCtx.<span class="code-function">waitUntil</span>(</span>
+<span class="code-line">        PostRepo.<span class="code-function">updatePublicContentSnapshot</span>(context.db, post.id, content),</span>
+<span class="code-line">      );</span>
+<span class="code-line">      <span class="code-keyword">return</span> { ...rest, content, toc: <span class="code-function">generateTocFromContent</span>(content) };</span>
+<span class="code-line">    },</span>
+<span class="code-line">  );</span>
+<span class="code-line">  <span class="code-keyword">return</span> post;</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">定义「根据网址查找文章」函数</p>
+              <p class="tl">它需要操作上下文（数据库连接等）</p>
+              <p class="tl">和文章的网址标识（slug）</p>
+              <p class="tl"></p>
+              <p class="tl">从<span class="term" data-definition="KV（Key-Value）：Cloudflare 的键值存储服务，类似一个超快的全球分布式字典，用来存放缓存数据。">KV</span> 缓存获取当前版本号</p>
+              <p class="tl">用版本号 + slug 组成缓存键——版本变了，缓存自动失效</p>
+              <p class="tl"></p>
+              <p class="tl">尝试从缓存获取数据</p>
+              <p class="tl">传入上下文和缓存键</p>
+              <p class="tl">用 <span class="term" data-definition="Schema：数据结构的定义和验证规则，就像一份表格模板——数据必须符合模板的格式才能通过。">Schema</span> 验证缓存数据的格式</p>
+              <p class="tl">如果缓存没有（或已过期），执行这个函数去数据库查：</p>
+              <p class="tl">调用数据层查询数据库</p>
+              <p class="tl">找不到就返回 null</p>
+              <p class="tl">如果有已处理的公开内容快照……</p>
+              <p class="tl">取出快照数据</p>
+              <p class="tl">解析并生成<span class="term" data-definition="目录（TOC，Table of Contents）：文章的结构化目录，让读者可以快速跳转到感兴趣的部分。">目录</span></p>
+              <p class="tl">返回完整数据</p>
+              <p class="tl">如果没有快照……</p>
+              <p class="tl">对代码块做语法高亮处理</p>
+              <p class="tl">取出原始内容</p>
+              <p class="tl">在后台（不阻塞返回）把处理好的内容保存为快照</p>
+              <p class="tl">这样下次就不用再处理了</p>
+              <p class="tl">返回带目录的文章数据</p>
+              <p class="tl">（这里是缓存查询的回退函数结束）</p>
+              <p class="tl"></p>
+              <p class="tl">把结果返回给调用方</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — CODE TRANSLATION: API Layer
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">API 层：薄薄的转发层</h2>
+
+        <p>对比一下 API 层的代码。它只做了三件事：接收请求、验证参数、转发给服务层。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export const</span> postBySlugQuery = <span class="code-function">createServerFn</span>({ method: <span class="code-string">"GET"</span> })</span>
+<span class="code-line">  .<span class="code-function">validator</span>((slug: <span class="code-function">string</span>) =&gt; slug)</span>
+<span class="code-line">  .<span class="code-function">handler</span>(<span class="code-keyword">async</span> ({ data: slug, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> { db, env, executionCtx } = context;</span>
+<span class="code-line">    <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostService.<span class="code-function">findPostBySlug</span>(</span>
+<span class="code-line">      { db, env, executionCtx },</span>
+<span class="code-line">      slug,</span>
+<span class="code-line">    );</span>
+<span class="code-line">    <span class="code-keyword">return</span> post;</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">创建一个「根据 slug 查文章」的<span class="term" data-definition="Server Function：在服务器端执行的函数，前端代码可以直接调用它，就像调用本地函数一样。这里用 createServerFn 来创建。">Server Function</span>，方式是 GET（只读）</p>
+              <p class="tl">验证输入参数：确保 slug 是字符串</p>
+              <p class="tl">定义处理函数：收到经过验证的 slug 和请求上下文</p>
+              <p class="tl">从上下文中取出数据库连接、环境变量、后台执行上下文</p>
+              <p class="tl">调用服务层的 findPostBySlug</p>
+              <p class="tl">把需要的上下文传给它</p>
+              <p class="tl">和文章的 slug</p>
+              <p class="tl">把结果直接返回给前端</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x26A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">对比两层代码</strong>
+            <p>API 层只有 9 行，没有任何业务逻辑。服务层有 20+ 行，包含缓存编排和数据转换。这就是「薄 API 层」——它只负责接线，不负责思考。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — DRAG AND DROP + QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">动手练一练</h2>
+
+        <p>把每项代码职责拖到它应该属于的那一层：</p>
+
+        <div class="dnd-container" id="dnd-module2">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="data">查询数据库获取文章列表</div>
+            <div class="dnd-chip" draggable="true" data-answer="service-cache">检查缓存是否过期，决定是否回源</div>
+            <div class="dnd-chip" draggable="true" data-answer="api">接收 HTTP 请求，验证参数</div>
+            <div class="dnd-chip" draggable="true" data-answer="service-ai">生成 AI 摘要</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="data">
+              <p class="dnd-zone-label">&#x1F5C4;&#xFE0F; 数据层（data/）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+            <div class="dnd-zone" data-correct="service-cache">
+              <p class="dnd-zone-label">&#x2699;&#xFE0F; 服务层（service）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+            <div class="dnd-zone" data-correct="service-ai">
+              <p class="dnd-zone-label">&#x2699;&#xFE0F; 服务层（service）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+            <div class="dnd-zone" data-correct="api">
+              <p class="dnd-zone-label">&#x1F50C; API 层（api/）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-module2')">检查答案</button>
+          <button class="btn" onclick="resetDnD('dnd-module2')">重新开始</button>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的理解</h2>
+
+        <div class="quiz-container" id="quiz-module2">
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="正确！三层各司其职：数据层负责数据库查询，服务层负责业务逻辑和缓存编排，API 层负责接收请求。这样 AI 就能把代码放到正确的位置。"
+               data-explanation-wrong="不完全对。想想三层各自的职责：数据层只做数据库查询，服务层编排缓存和业务逻辑，API 层只接收请求。点赞的每一部分都应该放在对应的层里。">
+            <h3 class="quiz-question">你想给博客添加「文章点赞」功能。以下哪个做法最符合项目架构？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在一个文件里同时写数据库查询、缓存逻辑和 API 接口</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只在 API 层写代码，直接操作数据库</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在 data/ 层写数据库查询，在 service 层写业务逻辑，在 api/ 层写 Server Function</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="完全正确！数据层只负责纯粹的数据库查询——查什么、怎么查。服务层在数据层之上增加缓存编排和业务逻辑。这就是关注点分离。"
+               data-explanation-wrong="想想图书馆的比喻：书架区只负责存放和取书，管理员才负责判断「先查目录还是直接去书架」。数据层就像书架——纯粹、专注。">
+            <h3 class="quiz-question">数据层（data/）和服务层（service）的核心区别是什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>数据层处理前端，服务层处理后端</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>数据层只做数据库查询，服务层编排缓存和业务逻辑</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>数据层更快，服务层更安全</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！这违反了关注点分离原则。数据库查询应该在 data/ 层，缓存编排应该在 service 层。混在一起的话，改缓存逻辑时可能会不小心破坏数据库查询，反之亦然。"
+               data-explanation-wrong="混合在一起看起来更方便，但实际上会让代码更脆弱。就像餐厅里厨师去端菜、服务员去炒菜——混乱又低效。分开才能各自专注、互不干扰。">
+            <h3 class="quiz-question">AI 帮你写了一段代码，把数据库查询和缓存逻辑写在了同一个函数里。根据项目规范，这有什么问题？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>违反了分层原则，应该把数据库查询放在 data/，缓存编排放在 service</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>没什么问题，放在一起效率更高</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>应该放在 API 层而不是 data 层</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module2')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module2')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>

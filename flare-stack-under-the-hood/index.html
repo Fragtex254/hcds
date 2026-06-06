@@ -1,0 +1,2948 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flare Stack 博客：代码幕后</title>
+
+  <!-- Google Fonts: Bricolage Grotesque · DM Sans · JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+
+  <!--
+    CUSTOMIZE PER COURSE — change only the three accent variables below.
+    Options:
+      vermillion  #D94F30 / #C4432A / #FDEEE9 / #E8836C  (default)
+      coral       #E06B56 / #C85A47 / #FDECEA / #E89585
+      teal        #2A7B9B / #1F6280 / #E4F2F7 / #5A9DB8
+      amber       #D4A843 / #BF9530 / #FDF5E0 / #E0C070
+      forest      #2D8B55 / #226B41 / #E8F5EE / #5AAD7A
+  -->
+  <style>
+    :root {
+      --color-accent:       #2A7B9B;
+      --color-accent-hover: #1F6280;
+      --color-accent-light: #E4F2F7;
+      --color-accent-muted: #5A9DB8;
+    }
+  </style>
+
+  <script src="main.js" defer></script>
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    <div class="nav-inner">
+      <span class="nav-title">Flare Stack 博客：代码幕后</span>
+      <div class="nav-dots" id="nav-dots" role="tablist">
+        <button class="nav-dot" data-target="module-1" data-tooltip="点击发布后发生了什么" role="tab" aria-label="模块 1: 点击发布后发生了什么"></button>
+        <button class="nav-dot" data-target="module-2" data-tooltip="代码库的组织方式" role="tab" aria-label="模块 2: 代码库的组织方式"></button>
+        <button class="nav-dot" data-target="module-3" data-tooltip="请求的一生" role="tab" aria-label="模块 3: 请求的一生"></button>
+        <button class="nav-dot" data-target="module-4" data-tooltip="三层缓存" role="tab" aria-label="模块 4: 三层缓存"></button>
+        <button class="nav-dot" data-target="module-5" data-tooltip="身份验证与安全" role="tab" aria-label="模块 5: 身份验证与安全"></button>
+        <button class="nav-dot" data-target="module-6" data-tooltip="异步任务" role="tab" aria-label="模块 6: 异步任务"></button>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <!-- modules/*.html content is assembled here by build.sh -->
+<section class="module" id="module-1" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">01</span>
+      <h1 class="module-title">点击「发布」后发生了什么？</h1>
+      <p class="module-subtitle">你写完了一篇博客，点了「发布」按钮。几秒钟后，全世界的人都能看到它了。但在这几秒钟里，到底发生了什么？</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">杂志印刷厂的秘密</h2>
+
+        <p>想象你是一本杂志的主编。你签发了一期新刊——但这只是开始。之后，<span class="term" data-definition="排版：把文字和图片按照设计要求排列成印刷版面的过程，就像把文章内容放进杂志的版式模板里。">排版</span>、校对、印刷、分发，一整条自动化流水线在运转。</p>
+
+        <p>博客发布也是这样。你点击「发布」的那一瞬间，<span class="term" data-definition="PostService：处理文章相关操作的核心服务模块。它负责保存文章、更新状态、触发发布流程等所有与文章相关的业务逻辑。">PostService</span> 接管了你的文章，交给一条由 <span class="term" data-definition="Workflow：一种可以暂停和重试的自动化流程。与普通函数不同，Workflow 会记住每一步的进度，失败后可以从断点恢复，不会从头开始。">Workflow</span> 驱动的自动化流水线。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">AI</div>
+            <h4 class="pattern-title">摘要师</h4>
+            <p class="pattern-desc">为文章生成简洁的摘要，让读者快速了解内容</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&lt;/&gt;</div>
+            <h4 class="pattern-title">代码高亮</h4>
+            <p class="pattern-desc">让代码片段显示漂亮的语法颜色</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F50D;</div>
+            <h4 class="pattern-title">索引员</h4>
+            <p class="pattern-desc">更新<span class="term" data-definition="搜索索引：就像图书馆的目录卡片，让搜索引擎能够快速找到文章。没有索引，搜索功能就无法工作。">搜索索引</span>，确保搜索能找到你的文章</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5); color: white">&#x1F3E0;</div>
+            <h4 class="pattern-title">管家</h4>
+            <p class="pattern-desc">清除旧的<span class="term" data-definition="缓存：临时存储的数据副本，用于加速访问。就像把常用的文件放在桌面上而不是柜子里。">缓存</span>，确保全世界的读者看到最新内容</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — CODE TRANSLATION: server.ts
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">入口文件：一切从这里开始</h2>
+
+        <p>每栋大楼都有一个前台总机。在代码库里，<span class="term" data-definition="入口文件：程序启动时第一个被执行的文件，就像一栋大楼的前台——所有访客都从这里进入。在 Cloudflare Workers 中，这个文件就是 server.ts。">入口文件</span> <code>server.ts</code> 就扮演这个角色。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">import</span> { handleQueueBatch } <span class="code-keyword">from</span> <span class="code-string">"@/lib/queue/queue.handler"</span>;</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">export</span> { PostProcessWorkflow } <span class="code-keyword">from</span> <span class="code-string">"@/features/posts/workflows/post-process"</span>;</span>
+<span class="code-line"><span class="code-keyword">export</span> { ScheduledPublishWorkflow } <span class="code-keyword">from</span> <span class="code-string">"@/features/posts/workflows/scheduled-publish"</span>;</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">export default</span> {</span>
+<span class="code-line">  <span class="code-keyword">async</span> <span class="code-function">fetch</span>(request, env, ctx) {</span>
+<span class="code-line">    <span class="code-keyword">const</span> { handleRootRequest } = <span class="code-keyword">await</span> <span class="code-keyword">import</span>(<span class="code-string">"@/lib/worker/root-handler"</span>);</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">handleRootRequest</span>(request, env, ctx);</span>
+<span class="code-line">  },</span>
+<span class="code-line">  <span class="code-keyword">async</span> <span class="code-function">queue</span>(batch, env, ctx) {</span>
+<span class="code-line">    <span class="code-keyword">await</span> <span class="code-function">handleQueueBatch</span>(batch, env, ctx);</span>
+<span class="code-line">  },</span>
+<span class="code-line">} <span class="code-keyword">satisfies</span> <span class="code-function">ExportedHandler</span>&lt;Env&gt;;</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">导入<span class="term" data-definition="队列处理器：从消息队列中取出任务并批量执行的程序。就像邮局的分拣员，从信箱里取出信件逐批处理。">队列处理器</span>——处理后台任务的程序</p>
+              <p class="tl">声明这篇文章会用到的<span class="term" data-definition="Workflow：一种可以暂停和重试的自动化流程。与普通函数不同，Workflow 会记住每一步的进度，失败后可以从断点恢复。">Workflow</span></p>
+              <p class="tl">包括「文章发布处理」和「定时发布」两个流水线</p>
+              <p class="tl"></p>
+              <p class="tl">定义程序的<span class="term" data-definition="入口点：程序开始执行的地方，就像大楼的正门。Cloudflare Workers 平台会调用这个入口来处理请求。">入口点</span>——<span class="term" data-definition="Cloudflare Workers：一个让代码运行在离用户最近的服务器上的平台。全球有几百个数据中心，用户的请求会自动分配到最近的一个。">Cloudflare Workers</span> 平台会调用它</p>
+              <p class="tl">当有<span class="term" data-definition="请求：浏览器发送给服务器的信息，就像你向图书馆管理员询问「有没有这本书？」服务器收到后会给你一个回应。">请求</span>来自浏览器时……</p>
+              <p class="tl">动态导入<span class="term" data-definition="请求处理器：接收并处理请求的函数，就像电话总机的接线员，根据来电类型分配到对应的部门。">请求处理器</span>（按需加载，节省启动时间）</p>
+              <p class="tl">把请求交给它处理，返回回应给用户</p>
+              <p class="tl"></p>
+              <p class="tl">当有消息到达<span class="term" data-definition="队列：一种先进先出的消息管道。就像邮局的信箱——信件按顺序排队，等待被逐封处理。在 Cloudflare 中，队列用于处理不需要立即完成的后台任务。">队列</span>时……</p>
+              <p class="tl">调用队列处理器批量处理（邮件、<span class="term" data-definition="Webhook：当某件事发生时，自动通知其他系统的机制。就像快递到达后自动发短信通知你取件。">webhook</span>、缓存清理等）</p>
+              <p class="tl"></p>
+              <p class="tl">类型注解：告诉 TypeScript 这个对象符合 Worker 的标准格式</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">两个入口，两条线路</strong>
+            <p><code>fetch</code> 处理浏览器发来的 HTTP 请求——用户打开网页时触发。<code>queue</code> 处理后台消息——<span class="term" data-definition="Workflow：一种可以暂停和重试的自动化流程。它会自动记住每一步的进度，失败后可以从断点恢复，不需要从头开始。">Workflow</span> 完成后或定时任务触发时，消息会被发送到队列里。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — DATA FLOW ANIMATION
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">数据在系统中如何流动？</h2>
+
+        <p>点击发布后，你的文章会经过一连串<span class="term" data-definition="服务：负责某一类业务逻辑的代码模块。每个服务只管一件事——发布服务管发布，搜索服务管搜索。就像医院里不同科室各司其职。">服务</span>的处理。每一步都有专门的「角色」负责。</p>
+
+        <div class="flow-animation" data-steps="[
+          {&quot;highlight&quot;:&quot;flow-actor-1&quot;,&quot;label&quot;:&quot;&#x7528;&#x6237;&#x70B9;&#x51FB;&#x300C;&#x53D1;&#x5E03;&#x300D;&#x6309;&#x94AE;&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-2&quot;,&quot;label&quot;:&quot;&#x53D1;&#x5E03;&#x670D;&#x52A1;&#x4FDD;&#x5B58;&#x6587;&#x7AE0;&#x72B6;&#x6001;&#x5230;&#x6570;&#x636E;&#x5E93;&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-2&quot;,&quot;to&quot;:&quot;actor-6&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-2&quot;,&quot;label&quot;:&quot;&#x521B;&#x5EFA; Workflow &#x5B9E;&#x4F8B;&#xFF0C;&#x542F;&#x52A8;&#x81EA;&#x52A8;&#x5316;&#x6D41;&#x6C34;&#x7EBF;&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-2&quot;,&quot;to&quot;:&quot;actor-3&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-3&quot;,&quot;label&quot;:&quot;&#x8C03;&#x5EA6;&#x5458;&#x68C0;&#x67E5;&#x5185;&#x5BB9;&#x662F;&#x5426;&#x6709;&#x53D8;&#x5316;&#xFF08;&#x540C;&#x6B65;&#x54C8;&#x5E0C;&#x68C0;&#x67E5;&#xFF09;&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-4&quot;,&quot;label&quot;:&quot;&#x6458;&#x8981;&#x5E08;&#x751F;&#x6210; AI &#x6458;&#x8981; &mdash; &#x5931;&#x8D25;&#x4F1A;&#x81EA;&#x52A8;&#x91CD;&#x8BD5; 3 &#x6B21;&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-3&quot;,&quot;to&quot;:&quot;actor-4&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-4&quot;,&quot;label&quot;:&quot;&#x6784;&#x5EFA;&#x4EE3;&#x7801;&#x9AD8;&#x4EAE;&#x540E;&#x7684;&#x516C;&#x5F00;&#x5185;&#x5BB9;&#x5FEB;&#x7167;&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-5&quot;,&quot;label&quot;:&quot;&#x7D22;&#x5F15;&#x5458;&#x66F4;&#x65B0;&#x641C;&#x7D22;&#x7D22;&#x5F15;&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-3&quot;,&quot;to&quot;:&quot;actor-5&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-6&quot;,&quot;label&quot;:&quot;&#x7BA1;&#x5BB6;&#x5931;&#x6548; KV &#x548C; CDN &#x7F13;&#x5B58;&quot;,&quot;packet&quot;:true,&quot;from&quot;:&quot;actor-3&quot;,&quot;to&quot;:&quot;actor-6&quot;},
+          {&quot;highlight&quot;:&quot;flow-actor-6&quot;,&quot;label&quot;:&quot;&#x66F4;&#x65B0;&#x540C;&#x6B65;&#x54C8;&#x5E0C;&#xFF0C;&#x9632;&#x6B62;&#x91CD;&#x590D;&#x5904;&#x7406; &mdash; &#x6D41;&#x6C34;&#x7EBF;&#x5B8C;&#x6210;&#xFF01;&quot;}
+        ]">
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon" style="border-color: var(--color-actor-2); color: var(--color-actor-2)">&#x1F464;</div>
+              <span>&#x7528;&#x6237;</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon" style="border-color: var(--color-actor-1); color: var(--color-actor-1)">&#x1F4E6;</div>
+              <span>&#x53D1;&#x5E03;&#x8005;</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon" style="border-color: var(--color-actor-2); color: var(--color-actor-2)">&#x1F6E4;</div>
+              <span>&#x8C03;&#x5EA6;&#x5458;</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon" style="border-color: var(--color-actor-3); color: var(--color-actor-3)">AI</div>
+              <span>&#x6458;&#x8981;&#x5E08;</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon" style="border-color: var(--color-actor-4); color: var(--color-actor-4)">&#x1F50D;</div>
+              <span>&#x7D22;&#x5F15;&#x5458;</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-6">
+              <div class="flow-actor-icon" style="border-color: var(--color-actor-5); color: var(--color-actor-5)">&#x1F3E0;</div>
+              <span>&#x7BA1;&#x5BB6;</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">&#x70B9;&#x51FB;&#x300C;&#x4E0B;&#x4E00;&#x6B65;&#x300D;&#x5F00;&#x59CB;&#x8FFD;&#x8E2A;&#x6570;&#x636E;&#x6D41;&#x52A8;</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">&#x4E0B;&#x4E00;&#x6B65;</button>
+            <button class="btn flow-reset-btn">&#x91CD;&#x65B0;&#x5F00;&#x59CB;</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — GROUP CHAT ANIMATION
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">如果这些服务会说话</h2>
+
+        <p>让我们偷听一下发布流水线中各个角色的对话：</p>
+
+        <div class="chat-window" id="chat-module1">
+          <div class="chat-messages">
+
+            <div class="chat-message" data-msg="0" data-sender="publisher" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">发</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">&#x53D1;&#x5E03;&#x8005;</span>
+                <p>&#x8C03;&#x5EA6;&#x5458;&#xFF01;&#x65B0;&#x6587;&#x7AE0;&#x5DF2;&#x53D1;&#x5E03;&#xFF0C;&#x6211;&#x5DF2;&#x7ECF;&#x66F4;&#x65B0;&#x4E86;&#x6570;&#x636E;&#x5E93;&#x72B6;&#x6001;&#xFF01;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="1" data-sender="dispatcher" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">调</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">&#x8C03;&#x5EA6;&#x5458;</span>
+                <p>&#x6536;&#x5230;&#xFF01;&#x6211;&#x5F00;&#x542F;&#x81EA;&#x52A8;&#x5316;&#x6D41;&#x6C34;&#x7EBF;&#x3002;&#x5148;&#x68C0;&#x67E5;&#x4E00;&#x4E0B;&#x5185;&#x5BB9;&#x662F;&#x5426;&#x6709;&#x53D8;&#x5316;&#x2026;&#x2026;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="2" data-sender="dispatcher" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">调</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">&#x8C03;&#x5EA6;&#x5458;</span>
+                <p>&#x6458;&#x8981;&#x5E08;&#xFF0C;&#x8BF7;&#x5E2E;&#x8FD9;&#x7BC7;&#x6587;&#x7AE0;&#x5199;&#x4E00;&#x4E2A; AI &#x6458;&#x8981;&#x3002;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="3" data-sender="summarizer" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">摘</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">&#x6458;&#x8981;&#x5E08;</span>
+                <p>&#x6458;&#x8981;&#x751F;&#x6210;&#x5B8C;&#x6210;&#xFF01; &#x2705;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="4" data-sender="dispatcher" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">调</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">&#x8C03;&#x5EA6;&#x5458;</span>
+                <p>&#x7D22;&#x5F15;&#x5458;&#xFF0C;&#x66F4;&#x65B0;&#x641C;&#x7D22;&#x7D22;&#x5F15;&#x3002;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="5" data-sender="indexer" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">索</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">&#x7D22;&#x5F15;&#x5458;</span>
+                <p>&#x7D22;&#x5F15;&#x66F4;&#x65B0;&#x5B8C;&#x6210;&#xFF01; &#x2705;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="6" data-sender="dispatcher" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">调</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">&#x8C03;&#x5EA6;&#x5458;</span>
+                <p>&#x7BA1;&#x5BB6;&#xFF0C;&#x6E05;&#x9664;&#x65E7;&#x7F13;&#x5B58;&#x3002;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="7" data-sender="butler" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">管</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">&#x7BA1;&#x5BB6;</span>
+                <p>KV &#x548C; CDN &#x7F13;&#x5B58;&#x5DF2;&#x5931;&#x6548;&#xFF01; &#x2705;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="8" data-sender="dispatcher" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">调</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">&#x8C03;&#x5EA6;&#x5458;</span>
+                <p>&#x53D1;&#x5E03;&#x8005;&#xFF0C;&#x5168;&#x90E8;&#x641E;&#x5B9A;&#xFF01;&#x6587;&#x7AE0;&#x5DF2;&#x7ECF;&#x53EF;&#x4EE5;&#x88AB;&#x5168;&#x4E16;&#x754C;&#x7684;&#x8BFB;&#x8005;&#x770B;&#x5230;&#x4E86;&#x3002; &#x1F389;</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="chat-typing" id="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-module1-typing-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">&#x4E0B;&#x4E00;&#x6761;</button>
+            <button class="btn chat-all-btn">&#x81EA;&#x52A8;&#x64AD;&#x653E;</button>
+            <button class="btn chat-reset-btn">&#x91CD;&#x65B0;&#x5F00;&#x59CB;</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — CODE TRANSLATION: publishPost
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">发布者的签发流程</h2>
+
+        <p>在流水线启动之前，<span class="term" data-definition="PostService：处理文章相关操作的核心服务模块。它负责保存文章、更新状态、触发发布流程等所有与文章相关的业务逻辑。">PostService</span> 需要先完成一系列准备工作——就像杂志主编在签发前必须确认文章存在、排好期号、盖上发刊章。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">publishPost</span>(</span>
+<span class="code-line">  context: Context,</span>
+<span class="code-line">  input: { postId: <span class="code-function">number</span>; publishedAt?: <span class="code-function">string</span> | <span class="code-function">null</span> },</span>
+<span class="code-line">) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostRepo.<span class="code-function">findPostById</span>(context.db, input.postId);</span>
+<span class="code-line">  <span class="code-keyword">if</span> (!post) <span class="code-keyword">return</span> <span class="code-function">err</span>(<span class="code-string">"POST_NOT_FOUND"</span>);</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">const</span> slug = <span class="code-keyword">await</span> <span class="code-function">ensureUniqueSlug</span>(context.db, post.title, post.id);</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">let</span> publishedAt = post.publishedAt;</span>
+<span class="code-line">  <span class="code-keyword">if</span> (post.status === <span class="code-string">"draft"</span>) {</span>
+<span class="code-line">    publishedAt = input.publishedAt</span>
+<span class="code-line">      ? <span class="code-keyword">new</span> <span class="code-function">Date</span>(input.publishedAt).<span class="code-function">toISOString</span>()</span>
+<span class="code-line">      : <span class="code-keyword">new</span> <span class="code-function">Date</span>().<span class="code-function">toISOString</span>();</span>
+<span class="code-line">  }</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">await</span> PostRepo.<span class="code-function">updatePost</span>(context.db, post.id, {</span>
+<span class="code-line">    publishedAt, status: <span class="code-string">"published"</span>, slug,</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">const</span> instance = <span class="code-keyword">await</span> context.env.POST_PROCESS_WORKFLOW.<span class="code-function">create</span>({</span>
+<span class="code-line">    params: { postId: post.id, isPublished: <span class="code-keyword">true</span> },</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">return</span> <span class="code-function">ok</span>({ postId: post.id, status: <span class="code-string">"published"</span> });</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">&#x5B9A;&#x4E49;&#x300C;&#x53D1;&#x5E03;&#x6587;&#x7AE0;&#x300D;&#x51FD;&#x6570;</p>
+              <p class="tl">&#x5B83;&#x9700;&#x8981;&#x77E5;&#x9053;&#x64CD;&#x4F5C;&#x4E0A;&#x4E0B;&#x6587;&#xFF08;&#x6570;&#x636E;&#x5E93;&#x8FDE;&#x63A5;&#x7B49;&#xFF09;</p>
+              <p class="tl">&#x548C;&#x53C2;&#x6570;&#xFF1A;&#x6587;&#x7AE0; ID&#xFF0C;&#x53EF;&#x9009;&#x7684;&#x53D1;&#x5E03;&#x65F6;&#x95F4;</p>
+              <p class="tl"></p>
+              <p class="tl">&#x4ECE;&#x6570;&#x636E;&#x5E93;&#x4E2D;&#x67E5;&#x627E;&#x8FD9;&#x7BC7;&#x6587;&#x7AE0;</p>
+              <p class="tl">&#x5982;&#x679C;&#x627E;&#x4E0D;&#x5230;&#xFF0C;&#x8FD4;&#x56DE;&#x9519;&#x8BEF;&#x4FE1;&#x606F;</p>
+              <p class="tl"></p>
+              <p class="tl">&#x4E3A;&#x6587;&#x7AE0;&#x751F;&#x6210;&#x4E00;&#x4E2A;&#x552F;&#x4E00;&#x7684;&#x7F51;&#x5740;&#x6807;&#x8BC6;&#x7B26;</p>
+              <p class="tl"></p>
+              <p class="tl">&#x4FDD;&#x7559;&#x5DF2;&#x6709;&#x7684;&#x53D1;&#x5E03;&#x65F6;&#x95F4;</p>
+              <p class="tl">&#x5982;&#x679C;&#x6587;&#x7AE0;&#x8FD8;&#x662F;&#x8349;&#x7A3F;&#x72B6;&#x6001;&#x2026;&#x2026;</p>
+              <p class="tl">&#x8BBE;&#x7F6E;&#x53D1;&#x5E03;&#x65F6;&#x95F4;</p>
+              <p class="tl">&#x7528;&#x7528;&#x6237;&#x6307;&#x5B9A;&#x7684;&#x65F6;&#x95F4;&#xFF0C;&#x6216;&#x8005;&#x9ED8;&#x8BA4;&#x4F7F;&#x7528;&#x5F53;&#x524D;&#x65F6;&#x95F4;</p>
+              <p class="tl"></p>
+              <p class="tl">&#x66F4;&#x65B0;&#x6570;&#x636E;&#x5E93;</p>
+              <p class="tl">&#x628A;&#x6587;&#x7AE0;&#x72B6;&#x6001;&#x6539;&#x4E3A;&#x300C;&#x5DF2;&#x53D1;&#x5E03;&#x300D;</p>
+              <p class="tl"></p>
+              <p class="tl">&#x521B;&#x5EFA; Workflow &#x5B9E;&#x4F8B;</p>
+              <p class="tl">&#x544A;&#x8BC9;&#x6D41;&#x6C34;&#x7EBF;&#xFF1A;&#x8FD9;&#x7BC7;&#x6587;&#x7AE0;&#x5DF2;&#x53D1;&#x5E03;&#xFF0C;&#x8BF7;&#x5F00;&#x59CB;&#x540E;&#x7EED;&#x5904;&#x7406;</p>
+              <p class="tl"></p>
+              <p class="tl">&#x7ACB;&#x523B;&#x8FD4;&#x56DE;&#x6210;&#x529F;&#x7ED9;&#x7528;&#x6237;&#xFF08;&#x4E0D;&#x7528;&#x7B49;&#x5F85;&#x6D41;&#x6C34;&#x7EBF;&#x5B8C;&#x6210;&#xFF09;</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x26A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">&#x4E3A;&#x4EC0;&#x4E48;&#x7ACB;&#x523B;&#x8FD4;&#x56DE;&#xFF1F;</strong>
+            <p><span class="term" data-definition="PostService&#xFF1A;&#x5904;&#x7406;&#x6587;&#x7AE0;&#x76F8;&#x5173;&#x64CD;&#x4F5C;&#x7684;&#x6838;&#x5FC3;&#x670D;&#x52A1;&#x6A21;&#x5757;&#xFF0C;&#x8D1F;&#x8D23;&#x4FDD;&#x5B58;&#x6587;&#x7AE0;&#x3001;&#x66F4;&#x65B0;&#x72B6;&#x6001;&#x7B49;&#x4E1A;&#x52A1;&#x903B;&#x8F91;&#x3002">PostService</span> &#x53EA;&#x8D1F;&#x8D23;&#x4FDD;&#x5B58;&#x6570;&#x636E;&#x548C;&#x521B;&#x5EFA; <span class="term" data-definition="Workflow&#xFF1A;&#x4E00;&#x79CD;&#x53EF;&#x4EE5;&#x6682;&#x505C;&#x548C;&#x91CD;&#x8BD5;&#x7684;&#x81EA;&#x52A8;&#x5316;&#x6D41;&#x7A0B;&#xFF0C;&#x4F1A;&#x8BB0;&#x4F4F;&#x6BCF;&#x4E00;&#x6B65;&#x7684;&#x8FDB;&#x5EA6;&#xFF0C;&#x5931;&#x8D25;&#x540E;&#x53EF;&#x4EE5;&#x4ECE;&#x65AD;&#x70B9;&#x6062;&#x590D;&#x3002">Workflow</span>&#xFF0C;&#x7136;&#x540E;&#x7ACB;&#x523B;&#x8FD4;&#x56DE;&#x3002;&#x6D41;&#x6C34;&#x7EBF;&#x4F1A;&#x5728;&#x540E;&#x53F0;&#x7EE7;&#x7EED;&#x8FD0;&#x884C;&#xFF0C;&#x7528;&#x6237;&#x4E0D;&#x9700;&#x8981;&#x7B49;&#x5F85;&#x3002;</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — STEP CARDS + CALLOUT + QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">发布流水线的 6 个步骤</h2>
+
+        <p><span class="term" data-definition="Workflow&#xFF1A;&#x4E00;&#x79CD;&#x53EF;&#x4EE5;&#x6682;&#x505C;&#x548C;&#x91CD;&#x8BD5;&#x7684;&#x81EA;&#x52A8;&#x5316;&#x6D41;&#x7A0B;&#x3002;&#x6BCF;&#x4E00;&#x6B65;&#x90FD;&#x662F;&#x72EC;&#x7ACB;&#x7684;&#xFF0C;&#x53EF;&#x4EE5;&#x5355;&#x72EC;&#x5931;&#x8D25;&#x548C;&#x91CD;&#x8BD5;&#xFF0C;&#x4E0D;&#x4F1A;&#x5F71;&#x54CD;&#x5176;&#x4ED6;&#x6B65;&#x9AA4;&#x3002">Workflow</span> &#x4E2D;&#x7684;&#x6BCF;&#x4E00;&#x6B65;&#x90FD;&#x662F;&#x72EC;&#x7ACB;&#x7684; <span class="term" data-definition="&#x6B65;&#x9AA4;&#xFF08;Step&#xFF09;&#xFF1A;Workflow &#x4E2D;&#x7684;&#x5355;&#x4E2A;&#x64CD;&#x4F5C;&#x5355;&#x5143;&#x3002;&#x6BCF;&#x4E2A;&#x6B65;&#x9AA4;&#x90FD;&#x53EF;&#x4EE5;&#x72EC;&#x7ACB;&#x5931;&#x8D25;&#x548C;&#x91CD;&#x8BD5;&#xFF0C;&#x5C31;&#x50CF;&#x6D41;&#x6C34;&#x7EBF;&#x4E0A;&#x7684;&#x6BCF;&#x4E2A;&#x5DE5;&#x4F4D;&#x90FD;&#x6709;&#x81EA;&#x5DF1;&#x7684;&#x8D28;&#x91CF;&#x68C0;&#x67E5;&#x3002">Step</span>&#xFF0C;&#x4EFB;&#x4F55;&#x4E00;&#x6B65;&#x5931;&#x8D25;&#x90FD;&#x4E0D;&#x4F1A;&#x5F71;&#x54CD;&#x5176;&#x4ED6;&#x6B65;&#x9AA4;&#x3002;</p>
+
+        <div class="step-cards stagger-children">
+          <div class="step-card animate-in">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>&#x68C0;&#x67E5;&#x540C;&#x6B65;&#x72B6;&#x6001;</strong>
+              <p>&#x8BA1;&#x7B97;&#x5185;&#x5BB9;&#x7684; <span class="term" data-definition="&#x54C8;&#x5E0C;&#xFF1A;&#x628A;&#x4EFB;&#x610F;&#x6570;&#x636E;&#x8F6C;&#x6362;&#x6210;&#x4E00;&#x4E2A;&#x56FA;&#x5B9A;&#x957F;&#x5EA6;&#x7684;&#x77ED;&#x5B57;&#x7B26;&#x4E32;&#xFF0C;&#x7C7B;&#x4F3C;&#x4E8E;&#x6570;&#x636E;&#x7684;&#x6307;&#x7EB9;&#x3002;&#x5982;&#x679C;&#x5185;&#x5BB9;&#x6CA1;&#x53D8;&#xFF0C;&#x54C8;&#x5E0C;&#x503C;&#x5C31;&#x4E0D;&#x4F1A;&#x53D8;&#x3002">哈希</span>&#xFF0C;&#x5BF9;&#x6BD4;&#x65E7;&#x54C8;&#x5E0C;&#x3002;&#x5982;&#x679C;&#x5185;&#x5BB9;&#x6CA1;&#x53D8;&#xFF0C;&#x8DF3;&#x8FC7;&#x6574;&#x4E2A;&#x6D41;&#x7A0B;&#x3002;</p>
+            </div>
+          </div>
+          <div class="step-card animate-in">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>AI &#x751F;&#x6210;&#x6458;&#x8981;</strong>
+              <p>&#x8C03;&#x7528; <span class="term" data-definition="Workers AI&#xFF1A;Cloudflare &#x5E73;&#x53F0;&#x5185;&#x7F6E;&#x7684; AI &#x670D;&#x52A1;&#xFF0C;&#x53EF;&#x4EE5;&#x76F4;&#x63A5;&#x5728;&#x8FB9;&#x7F18;&#x8FD0;&#x884C; AI &#x6A21;&#x578B;&#xFF0C;&#x65E0;&#x9700;&#x8C03;&#x7528;&#x5916;&#x90E8;&#x670D;&#x52A1;&#x3002">Workers AI</span> &#x4E3A;&#x6587;&#x7AE0;&#x751F;&#x6210;&#x6458;&#x8981;&#x3002;&#x5931;&#x8D25;&#x65F6;&#x81EA;&#x52A8;&#x91CD;&#x8BD5; 3 &#x6B21;&#xFF08;&#x95F4;&#x9694;&#x8D8A;&#x6765;&#x8D8A;&#x957F;&#xFF09;&#x3002;</p>
+            </div>
+          </div>
+          <div class="step-card animate-in">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>&#x6784;&#x5EFA;&#x516C;&#x5F00;&#x5185;&#x5BB9;&#x5FEB;&#x7167;</strong>
+              <p>&#x5BF9;&#x4EE3;&#x7801;&#x5757;&#x505A;&#x8BED;&#x6CD5;&#x9AD8;&#x4EAE;&#x5904;&#x7406;&#xFF0C;&#x7136;&#x540E;&#x4FDD;&#x5B58;&#x4E3A;&#x72EC;&#x7ACB;&#x7684;&#x300C;&#x516C;&#x5F00;&#x5FEB;&#x7167;&#x300D;&#x3002;&#x8BFB;&#x8005;&#x770B;&#x5230;&#x7684;&#x5C31;&#x662F;&#x8FD9;&#x4E2A;&#x5FEB;&#x7167;&#x3002;</p>
+            </div>
+          </div>
+          <div class="step-card animate-in">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <strong>&#x66F4;&#x65B0;&#x641C;&#x7D22;&#x7D22;&#x5F15;</strong>
+              <p>&#x628A;&#x6587;&#x7AE0;&#x4FE1;&#x606F;&#x52A0;&#x5165; <span class="term" data-definition="Orama&#xFF1A;&#x4E00;&#x4E2A;&#x8F7B;&#x91CF;&#x7EA7;&#x7684;&#x5168;&#x6587;&#x641C;&#x7D22;&#x5F15;&#x64CE;&#xFF0C;&#x53EF;&#x4EE5;&#x5728;&#x6D4F;&#x89C8;&#x5668;&#x548C;&#x670D;&#x52A1;&#x5668;&#x4E24;&#x7AEF;&#x8FD0;&#x884C;&#xFF0C;&#x8BA9;&#x641C;&#x7D22;&#x529F;&#x80FD;&#x80FD;&#x627E;&#x5230;&#x6587;&#x7AE0;&#x3002">Orama</span> &#x641C;&#x7D22;&#x7D22;&#x5F15;&#xFF0C;&#x786E;&#x4FDD;&#x7528;&#x6237;&#x641C;&#x7D22;&#x65F6;&#x80FD;&#x627E;&#x5230;&#x5B83;&#x3002;</p>
+            </div>
+          </div>
+          <div class="step-card animate-in">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <strong>&#x5931;&#x6548;&#x7F13;&#x5B58;</strong>
+              <p>&#x6E05;&#x9664; <span class="term" data-definition="KV&#xFF1A;Cloudflare &#x7684;&#x952E;&#x503C;&#x5B58;&#x50A8;&#x670D;&#x52A1;&#xFF0C;&#x7C7B;&#x4F3C;&#x4E8E;&#x4E00;&#x4E2A;&#x8D85;&#x5FEB;&#x7684;&#x5168;&#x7403;&#x5206;&#x5E03;&#x5F0F;&#x7F13;&#x5B58;&#x5B57;&#x5178;&#x3002;">KV</span> &#x548C; <span class="term" data-definition="CDN&#xFF1A;&#x5185;&#x5BB9;&#x5206;&#x53D1;&#x7F51;&#x7EDC;&#xFF0C;&#x5728;&#x5168;&#x7403;&#x5404;&#x5730;&#x6709;&#x5F88;&#x591A;&#x670D;&#x52A1;&#x5668;&#x8282;&#x70B9;&#xFF0C;&#x628A;&#x7F51;&#x9875;&#x5185;&#x5BB9;&#x7F13;&#x5B58;&#x5230;&#x79BB;&#x7528;&#x6237;&#x6700;&#x8FD1;&#x7684;&#x8282;&#x70B9;&#xFF0C;&#x8BA9;&#x8BBF;&#x95EE;&#x901F;&#x5EA6;&#x66F4;&#x5FEB;&#x3002;">CDN</span> &#x4E2D;&#x7684;&#x65E7;&#x7F13;&#x5B58;&#xFF0C;&#x786E;&#x4FDD;&#x7528;&#x6237;&#x770B;&#x5230;&#x6700;&#x65B0;&#x5185;&#x5BB9;&#x3002;</p>
+            </div>
+          </div>
+          <div class="step-card animate-in">
+            <div class="step-num">6</div>
+            <div class="step-body">
+              <strong>&#x66F4;&#x65B0;&#x540C;&#x6B65;&#x54C8;&#x5E0C;</strong>
+              <p>&#x8BB0;&#x5F55;&#x5F53;&#x524D;&#x5185;&#x5BB9;&#x7684;&#x54C8;&#x5E0C;&#x503C;&#xFF0C;&#x9632;&#x6B62;&#x540C;&#x4E00;&#x5185;&#x5BB9;&#x88AB;&#x91CD;&#x590D;&#x5904;&#x7406;&#x3002;</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-8)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">&#x5173;&#x952E;&#x6D1E;&#x5BDF;&#xFF1A;Workflow vs &#x51FD;&#x6570;&#x8C03;&#x7528;</strong>
+            <p><span class="term" data-definition="Workflow&#xFF1A;&#x4E00;&#x79CD;&#x53EF;&#x4EE5;&#x6682;&#x505C;&#x548C;&#x91CD;&#x8BD5;&#x7684;&#x81EA;&#x52A8;&#x5316;&#x6D41;&#x7A0B;&#x3002;&#x6BCF;&#x4E00;&#x6B65;&#x90FD;&#x662F;&#x72EC;&#x7ACB;&#x7684;&#xFF0C;&#x5931;&#x8D25;&#x540E;&#x53EF;&#x4EE5;&#x4ECE;&#x65AD;&#x70B9;&#x6062;&#x590D;&#x3002;">Workflow</span> &#x662F;&#x300C;&#x53EF;&#x4EE5;&#x6682;&#x505C;&#x548C;&#x91CD;&#x8BD5;&#x7684;&#x51FD;&#x6570;&#x300D;&#x3002;&#x5982;&#x679C; AI &#x670D;&#x52A1;&#x6682;&#x65F6;&#x4E0D;&#x53EF;&#x7528;&#xFF0C;Workflow &#x4F1A;&#x81EA;&#x52A8;&#x91CD;&#x8BD5; 3 &#x6B21;&#xFF08;&#x6BCF;&#x6B21;&#x95F4;&#x9694;&#x66F4;&#x957F;&#xFF09;&#xFF0C;&#x800C;&#x4E0D;&#x662F;&#x76F4;&#x63A5;&#x62A5;&#x9519;&#x7ED9;&#x7528;&#x6237;&#x3002;&#x6574;&#x4E2A;&#x8FC7;&#x7A0B;&#x662F;&#x5F02;&#x6B65;&#x7684;&#xFF0C;&#x7528;&#x6237;&#x70B9;&#x51FB;&#x53D1;&#x5E03;&#x540E;&#x4E0D;&#x9700;&#x8981;&#x7B49;&#x5F85;&#x6D41;&#x6C34;&#x7EBF;&#x5B8C;&#x6210;&#x3002;</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">&#x68C0;&#x9A8C;&#x4F60;&#x7684;&#x7406;&#x89E3;</h2>
+
+        <div class="quiz-container" id="quiz-module1">
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="&#x6B63;&#x786E;&#xFF01;&#x6D41;&#x6C34;&#x7EBF;&#x4F1A;&#x81EA;&#x52A8;&#x91CD;&#x8BD5; AI &#x64CD;&#x4F5C;&#x6700;&#x591A; 3 &#x6B21;&#xFF08;&#x95F4;&#x9694;&#x8D8A;&#x6765;&#x8D8A;&#x957F;&#xFF09;&#x3002;&#x5373;&#x4F7F; AI &#x6700;&#x7EC8;&#x5931;&#x8D25;&#xFF0C;&#x6587;&#x7AE0;&#x4E5F;&#x5DF2;&#x7ECF;&#x53D1;&#x5E03;&#x4E86;&#x2014;&#x2014;&#x6458;&#x8981;&#x53EA;&#x662F;&#x9526;&#x4E0A;&#x6DFB;&#x82B1;&#xFF0C;&#x4E0D;&#x662F;&#x5FC5;&#x8981;&#x6761;&#x4EF6;&#x3002;"
+               data-explanation-wrong="&#x4E0D;&#x5B8C;&#x5168;&#x5BF9;&#x3002;&#x6587;&#x7AE0;&#x6570;&#x636E;&#x5DF2;&#x7ECF;&#x5728; PostService &#x4E2D;&#x4FDD;&#x5B58;&#x5230;&#x6570;&#x636E;&#x5E93;&#x4E86;&#xFF0C;&#x800C; AI &#x6458;&#x8981;&#x662F;&#x6D41;&#x6C34;&#x7EBF;&#x540E;&#x7EED;&#x7684;&#x989D;&#x5916;&#x6B65;&#x9AA4;&#x3002;&#x6D41;&#x6C34;&#x7EBF;&#x4F1A;&#x81EA;&#x52A8;&#x91CD;&#x8BD5; 3 &#x6B21;&#xFF0C;&#x5373;&#x4F7F;&#x6700;&#x7EC8;&#x5931;&#x8D25;&#x4E5F;&#x4E0D;&#x4F1A;&#x5F71;&#x54CD;&#x6587;&#x7AE0;&#x7684;&#x53D1;&#x5E03;&#x72B6;&#x6001;&#x3002;">
+            <h3 class="quiz-question">&#x53D1;&#x5E03;&#x4E00;&#x7BC7;&#x6587;&#x7AE0;&#x540E;&#xFF0C;&#x5982;&#x679C; AI &#x6458;&#x8981;&#x751F;&#x6210;&#x5931;&#x8D25;&#x4E86;&#xFF0C;&#x6587;&#x7AE0;&#x8FD8;&#x80FD;&#x53D1;&#x5E03;&#x5417;&#xFF1F;</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x4E0D;&#x80FD;&#xFF0C;AI &#x5931;&#x8D25;&#x4F1A;&#x963B;&#x6B62;&#x6574;&#x4E2A;&#x53D1;&#x5E03;&#x6D41;&#x7A0B;</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x80FD;&#xFF0C;&#x6D41;&#x6C34;&#x7EBF;&#x4F1A;&#x81EA;&#x52A8;&#x91CD;&#x8BD5;&#xFF0C;&#x5373;&#x4F7F; AI &#x5931;&#x8D25;&#x4E5F;&#x4E0D;&#x5F71;&#x54CD;&#x6587;&#x7AE0;&#x53D1;&#x5E03;</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x53D6;&#x51B3;&#x4E8E; AI &#x670D;&#x52A1;&#x7684;&#x54CD;&#x5E94;&#x65F6;&#x95F4;</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="&#x5B8C;&#x5168;&#x6B63;&#x786E;&#xFF01;&#x8FD9;&#x4E9B;&#x64CD;&#x4F5C;&#x5404;&#x81EA;&#x53EF;&#x80FD;&#x5931;&#x8D25;&#xFF0C;&#x9700;&#x8981;&#x72EC;&#x7ACB;&#x91CD;&#x8BD5;&#x3002;&#x800C;&#x4E14;&#x5B83;&#x4EEC;&#x4E0D;&#x5E94;&#x8BE5;&#x963B;&#x585E;&#x7528;&#x6237;&#x7684;&#x53D1;&#x5E03;&#x64CD;&#x4F5C;&#x2014;&#x2014;&#x7528;&#x6237;&#x70B9;&#x51FB;&#x53D1;&#x5E03;&#x540E;&#x5E94;&#x8BE5;&#x7ACB;&#x523B;&#x5F97;&#x5230;&#x53CD;&#x9988;&#x3002;"
+               data-explanation-wrong="&#x60F3;&#x60F3;&#x6D41;&#x6C34;&#x7EBF;&#x7684;&#x7279;&#x70B9;&#xFF1A;&#x6BCF;&#x4E2A;&#x6B65;&#x9AA4;&#x53EF;&#x4EE5;&#x72EC;&#x7ACB;&#x5931;&#x8D25;&#x548C;&#x91CD;&#x8BD5;&#xFF0C;&#x800C;&#x4E14;&#x6574;&#x4E2A;&#x8FC7;&#x7A0B;&#x662F;&#x5F02;&#x6B65;&#x7684;&#xFF08;&#x540E;&#x53F0;&#x8FD0;&#x884C;&#xFF09;&#x3002;&#x5982;&#x679C;&#x653E;&#x5728;&#x4E00;&#x4E2A;&#x51FD;&#x6570;&#x91CC;&#xFF0C;&#x4EFB;&#x4F55;&#x4E00;&#x6B65;&#x5931;&#x8D25;&#x90FD;&#x4F1A;&#x8BA9;&#x6574;&#x4E2A;&#x6D41;&#x7A0B;&#x4E2D;&#x65AD;&#xFF0C;&#x7528;&#x6237;&#x4E5F;&#x5FC5;&#x987B;&#x7B49;&#x5F85;&#x6240;&#x6709;&#x6B65;&#x9AA4;&#x5B8C;&#x6210;&#x3002;">
+            <h3 class="quiz-question">&#x4E3A;&#x4EC0;&#x4E48;&#x4E0D;&#x76F4;&#x63A5;&#x5728; publishPost &#x51FD;&#x6570;&#x91CC;&#x505A;&#x5B8C;&#x6240;&#x6709;&#x4E8B;&#x60C5;&#xFF0C;&#x800C;&#x8981;&#x7528; Workflow&#xFF1F;</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Workflow &#x7684;&#x4EE3;&#x7801;&#x66F4;&#x7B80;&#x6D01;</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x8FD9;&#x4E9B;&#x6B65;&#x9AA4;&#x5404;&#x81EA;&#x53EF;&#x80FD;&#x5931;&#x8D25;&#x9700;&#x8981;&#x72EC;&#x7ACB;&#x91CD;&#x8BD5;&#xFF0C;&#x4E14;&#x4E0D;&#x5E94;&#x963B;&#x585E;&#x7528;&#x6237;</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Workflow &#x6267;&#x884C;&#x901F;&#x5EA6;&#x66F4;&#x5FEB;</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="&#x6B63;&#x786E;&#xFF01;&#x540C;&#x6B65; hash &#x673A;&#x5236;&#x4F1A;&#x68C0;&#x6D4B;&#x5230;&#x5185;&#x5BB9;&#x53D8;&#x5316;&#xFF0C;&#x7136;&#x540E;&#x91CD;&#x65B0;&#x8D70;&#x5B8C;&#x6574;&#x7684;&#x5904;&#x7406;&#x6D41;&#x7A0B;&#xFF1A;&#x751F;&#x6210;&#x65B0;&#x6458;&#x8981;&#x3001;&#x66F4;&#x65B0;&#x4EE3;&#x7801;&#x9AD8;&#x4EAE;&#x3001;&#x5237;&#x65B0;&#x641C;&#x7D22;&#x7D22;&#x5F15;&#x3002;&#x6BCF;&#x4E00;&#x6B65;&#x90FD;&#x53EF;&#x4EE5;&#x72EC;&#x7ACB;&#x91CD;&#x8BD5;&#xFF0C;&#x6240;&#x4EE5;&#x5B89;&#x5168;&#x53EF;&#x9760;&#x3002;"
+               data-explanation-wrong="&#x4E0D;&#x5BF9;&#x3002;&#x540C;&#x6B65; hash &#x673A;&#x5236;&#x4F1A;&#x68C0;&#x6D4B;&#x5185;&#x5BB9;&#x53D8;&#x5316;&#x3002;&#x5982;&#x679C;&#x5185;&#x5BB9;&#x6709;&#x53D8;&#xFF0C;&#x6D41;&#x6C34;&#x7EBF;&#x4F1A;&#x5B8C;&#x6574;&#x91CD;&#x65B0;&#x5904;&#x7406;&#xFF1B;&#x5982;&#x679C;&#x5185;&#x5BB9;&#x6CA1;&#x53D8;&#xFF0C;&#x5219;&#x8DF3;&#x8FC7;&#x5904;&#x7406;&#x3002;&#x8FD9;&#x5C31;&#x662F;&#x7B2C; 1 &#x6B65;&#x300C;&#x68C0;&#x67E5;&#x540C;&#x6B65;&#x72B6;&#x6001;&#x300D;&#x7684;&#x4F5C;&#x7528;&#x3002;">
+            <h3 class="quiz-question">&#x5982;&#x679C;&#x6709;&#x4EBA;&#x53D1;&#x5E03;&#x4E86;&#x6587;&#x7AE0;&#xFF0C;&#x7136;&#x540E;&#x7ACB;&#x523B;&#x4FEE;&#x6539;&#x4E86;&#x5185;&#x5BB9;&#x518D;&#x53D1;&#x5E03;&#xFF0C;&#x4F1A;&#x53D1;&#x751F;&#x4EC0;&#x4E48;&#xFF1F;</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x7B2C;&#x4E8C;&#x6B21;&#x53D1;&#x5E03;&#x4F1A;&#x5931;&#x8D25;&#xFF0C;&#x56E0;&#x4E3A;&#x6587;&#x7AE0;&#x5DF2;&#x7ECF;&#x53D1;&#x5E03;&#x8FC7;</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x6D41;&#x6C34;&#x7EBF;&#x4F1A;&#x8DF3;&#x8FC7;&#xFF0C;&#x56E0;&#x4E3A;&#x6587;&#x7AE0;&#x5DF2;&#x7ECF;&#x5B58;&#x5728;</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>&#x540C;&#x6B65;&#x54C8;&#x5E0C;&#x68C0;&#x6D4B;&#x5230;&#x53D8;&#x5316;&#xFF0C;&#x91CD;&#x65B0;&#x8D70;&#x5B8C;&#x6574;&#x5904;&#x7406;&#x6D41;&#x7A0B;</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module1')">&#x68C0;&#x67E5;&#x7B54;&#x6848;</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module1')">&#x91CD;&#x65B0;&#x5C1D;&#x8BD5;</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-2" style="background: var(--color-bg-warm)">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">02</span>
+      <h1 class="module-title">代码库的组织方式</h1>
+      <p class="module-subtitle">如果你让 AI 帮你改博客的评论功能，它应该改哪个文件？如果你说「改评论那个文件夹里的代码」，你已经比大多数人强了。但具体是哪个文件呢？</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Library Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">图书馆的秘密</h2>
+
+        <p>想象你走进一座图书馆。你不会看到一个巨大的房间把所有书胡乱堆在一起——文学区、科学区、历史区，每个区域有自己的书架排列方式和管理员。</p>
+
+        <p>代码库也是这样。博客的每个<span class="term" data-definition="功能模块（Feature Module）：代码库中按业务功能划分的独立单元，比如「文章」「评论」「搜索」。每个功能模块有自己的文件夹，包含相关的代码、数据库查询和界面组件。">功能模块</span>——文章、评论、搜索——就像图书馆的一个分区，有自己独立的空间。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F4DA;</div>
+            <h4 class="pattern-title">分区 = 功能模块</h4>
+            <p class="pattern-desc">每个功能一个文件夹，互不干扰</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F4CB;</div>
+            <h4 class="pattern-title">书架 = 数据层</h4>
+            <p class="pattern-desc">存放和检索原始资料</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x2699;&#xFE0F;</div>
+            <h4 class="pattern-title">管理员 = 服务层</h4>
+            <p class="pattern-desc">判断该怎么做，协调各项工作</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F4DD;</div>
+            <h4 class="pattern-title">前台 = API 层</h4>
+            <p class="pattern-desc">接收请求，转发给对应区域</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">理解这个结构，你就能精准地告诉 AI：「把这段逻辑放在<span class="term" data-definition="服务层：负责业务逻辑和流程编排的代码层。它决定「该怎么做」——比如先查缓存、再查数据库、然后转换数据格式。">服务层</span>」，而不是让它乱放。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — VISUAL FILE TREE
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">走进「文章」分区</h2>
+
+        <p>让我们打开<span class="term" data-definition="Posts 功能模块：处理博客文章的核心功能模块，包括文章的创建、编辑、发布、查询等全部操作。">文章功能</span>的文件夹，看看里面的结构：</p>
+
+        <div class="file-tree animate-in">
+          <div class="ft-folder open">
+            <span class="ft-name">features/posts/</span>
+            <span class="ft-desc">文章功能的全部代码</span>
+            <div class="ft-children">
+              <div class="ft-folder">
+                <span class="ft-name">data/</span>
+                <span class="ft-desc">数据层：纯<span class="term" data-definition="数据库查询：从数据库中检索数据的操作。就像在图书馆的电脑上搜索「有没有某本书」，然后从书架上把它找出来。">数据库查询</span></span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.data.ts</span>
+                    <span class="ft-desc">文章的数据库操作（查、改、删）</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">services/</span>
+                <span class="ft-desc">服务层：业务逻辑 + <span class="term" data-definition="缓存编排：决定何时使用缓存、何时回源查询数据库、何时更新缓存的协调逻辑。就像管理员决定「先查卡片目录，没有再去书架找」。">缓存编排</span></span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.service.ts</span>
+                    <span class="ft-desc">核心业务逻辑，调用数据层和缓存</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">schema/</span>
+                <span class="ft-desc">数据结构定义</span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.schema.ts</span>
+                    <span class="ft-desc"><span class="term" data-definition="Zod：一个数据验证库，用来检查数据格式是否正确。就像机场安检——不符合规格的东西会被拦下来。">Zod</span> 验证 + <span class="term" data-definition="缓存键（Cache Key）：用于标识缓存数据的唯一标签。就像图书馆借书卡上的索书号，通过它可以精确定位到缓存的内容。">缓存键</span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">api/</span>
+                <span class="ft-desc">API 层：<span class="term" data-definition="Server Function：在服务器端执行的函数，前端代码可以直接调用它，就像调用本地函数一样。它负责接收前端请求并转发给服务层。">Server Functions</span></span>
+                <div class="ft-children">
+                  <div class="ft-file">
+                    <span class="ft-name">posts.queries.ts</span>
+                    <span class="ft-desc">查询（读操作）</span>
+                  </div>
+                  <div class="ft-file">
+                    <span class="ft-name">posts.mutations.ts</span>
+                    <span class="ft-desc">变更（写操作）</span>
+                  </div>
+                  <div class="ft-folder">
+                    <span class="ft-name">hono/</span>
+                    <span class="ft-desc"><span class="term" data-definition="Hono 路由：面向公众的 HTTP 接口，不需要登录就能访问。就像图书馆的公共查询终端，任何人都可以用。">Hono</span> 公开路由</span>
+                    <div class="ft-children">
+                      <div class="ft-file"><span class="ft-name">posts.list.route.ts</span><span class="ft-desc">文章列表接口</span></div>
+                      <div class="ft-file"><span class="ft-name">posts.detail.route.ts</span><span class="ft-desc">文章详情接口</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">components/</span>
+                <span class="ft-desc"><span class="term" data-definition="React 组件：可复用的界面构建块，就像乐高积木——每个组件负责一小块界面，组合起来构成完整的页面。">React 组件</span></span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">queries/</span>
+                <span class="ft-desc"><span class="term" data-definition="TanStack Query：一个管理服务器数据获取的库。它自动处理缓存、重新请求、错误重试等，让前端代码更简洁。">TanStack Query</span> hooks</span>
+              </div>
+              <div class="ft-folder">
+                <span class="ft-name">workflows/</span>
+                <span class="ft-desc"><span class="term" data-definition="Workflow：一种可以暂停和重试的自动化流程。它会记住每一步的进度，失败后可以从断点恢复，不需要从头开始。">Workflow</span> 持久化流程</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">同样的结构也出现在 <code>features/comments/</code>、<code>features/tags/</code> 等每一个功能模块中。一旦你理解了一个，就理解了全部。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — ICON-LABEL ROWS: Three-Layer Architecture
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">三层架构</h2>
+
+        <p>每个功能模块的核心代码都遵循同一套三层结构。就像图书馆的每个分区都有书架区、管理室和借阅台。</p>
+
+        <div class="icon-rows animate-in">
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-1)">&#x1F5C4;&#xFE0F;</div>
+            <div>
+              <strong>数据层（data/）</strong>
+              <p>只做一件事：<span class="term" data-definition="数据库（Database）：有组织地存储数据的系统，就像图书馆的书库。数据层通过 Drizzle ORM（一种操作数据库的工具）来读写数据。">数据库</span>查询。不关心缓存，不关心业务逻辑，纯粹的读写操作。</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-2)">&#x2699;&#xFE0F;</div>
+            <div>
+              <strong>服务层（service）</strong>
+              <p>编排业务逻辑 + 缓存策略。决定「先查缓存还是直接查数据库」「数据要不要做额外处理」。</p>
+            </div>
+          </div>
+          <div class="icon-row">
+            <div class="icon-circle" style="background: var(--color-actor-4)">&#x1F50C;</div>
+            <div>
+              <strong>API 层（api/）</strong>
+              <p><span class="term" data-definition="请求入口：接收外部请求的地方，就像图书馆的借阅台——读者在这里提交借书请求，工作人员把请求转发给对应的分区。">请求入口</span>。接收<span class="term" data-definition="HTTP 请求：浏览器与服务器之间的通信方式。当你在浏览器中输入网址或点击链接时，浏览器就会向服务器发送一个 HTTP 请求。">HTTP 请求</span>，验证参数，然后转发给服务层。它是「薄薄的」一层——几乎不包含任何业务逻辑。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-8)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：关注点分离</strong>
+            <p><span class="term" data-definition="关注点分离（Separation of Concerns）：一个软件设计原则——每个模块只负责一件事情。就像餐厅里厨师不负责端菜、服务员不负责炒菜一样，每层只做自己的事，改动时不会互相影响。">关注点分离</span>——每个代码层只做自己的事。数据层不管缓存，API 层不管业务逻辑。改动一层不会影响其他层。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Service Layer
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">服务层：缓存与业务的指挥官</h2>
+
+        <p>这是文章模块中「根据网址查找文章」的服务层代码。注意它如何协调<span class="term" data-definition="缓存（Cache）：临时存储的数据副本，用于加速访问。就像把常用的书放在前台而非书库里，取用更快。">缓存</span>和数据库——先查缓存，缓存没有才去数据库。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">findPostBySlug</span>(</span>
+<span class="code-line">  context: Context,</span>
+<span class="code-line">  slug: <span class="code-function">string</span>,</span>
+<span class="code-line">) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> version = <span class="code-keyword">await</span> CacheService.<span class="code-function">getVersion</span>(context, <span class="code-string">"posts:detail"</span>);</span>
+<span class="code-line">  <span class="code-keyword">const</span> cacheKey = [version, <span class="code-string">"post"</span>, slug] <span class="code-keyword">as const</span>;</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> CacheService.<span class="code-function">get</span>(</span>
+<span class="code-line">    context,</span>
+<span class="code-line">    cacheKey,</span>
+<span class="code-line">    PostWithTocSchema,</span>
+<span class="code-line">    <span class="code-keyword">async</span> () =&gt; {</span>
+<span class="code-line">      <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostRepo.<span class="code-function">findPostBySlug</span>(context.db, slug);</span>
+<span class="code-line">      <span class="code-keyword">if</span> (!post) <span class="code-keyword">return null</span>;</span>
+<span class="code-line">      <span class="code-keyword">if</span> (post.publicContentJson) {</span>
+<span class="code-line">        <span class="code-keyword">const</span> { publicContentJson, ...rest } = post;</span>
+<span class="code-line">        <span class="code-keyword">const</span> content = contentSchema.<span class="code-function">parse</span>(publicContentJson);</span>
+<span class="code-line">        <span class="code-keyword">return</span> { ...rest, content, toc: <span class="code-function">generateTocFromContent</span>(content) };</span>
+<span class="code-line">      }</span>
+<span class="code-line">      <span class="code-keyword">const</span> content = <span class="code-keyword">await</span> <span class="code-function">highlightCodeBlocks</span>(post.contentJson);</span>
+<span class="code-line">      <span class="code-keyword">const</span> { contentJson, ...rest } = post;</span>
+<span class="code-line">      context.executionCtx.<span class="code-function">waitUntil</span>(</span>
+<span class="code-line">        PostRepo.<span class="code-function">updatePublicContentSnapshot</span>(context.db, post.id, content),</span>
+<span class="code-line">      );</span>
+<span class="code-line">      <span class="code-keyword">return</span> { ...rest, content, toc: <span class="code-function">generateTocFromContent</span>(content) };</span>
+<span class="code-line">    },</span>
+<span class="code-line">  );</span>
+<span class="code-line">  <span class="code-keyword">return</span> post;</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">定义「根据网址查找文章」函数</p>
+              <p class="tl">它需要操作上下文（数据库连接等）</p>
+              <p class="tl">和文章的网址标识（slug）</p>
+              <p class="tl"></p>
+              <p class="tl">从<span class="term" data-definition="KV（Key-Value）：Cloudflare 的键值存储服务，类似一个超快的全球分布式字典，用来存放缓存数据。">KV</span> 缓存获取当前版本号</p>
+              <p class="tl">用版本号 + slug 组成缓存键——版本变了，缓存自动失效</p>
+              <p class="tl"></p>
+              <p class="tl">尝试从缓存获取数据</p>
+              <p class="tl">传入上下文和缓存键</p>
+              <p class="tl">用 <span class="term" data-definition="Schema：数据结构的定义和验证规则，就像一份表格模板——数据必须符合模板的格式才能通过。">Schema</span> 验证缓存数据的格式</p>
+              <p class="tl">如果缓存没有（或已过期），执行这个函数去数据库查：</p>
+              <p class="tl">调用数据层查询数据库</p>
+              <p class="tl">找不到就返回 null</p>
+              <p class="tl">如果有已处理的公开内容快照……</p>
+              <p class="tl">取出快照数据</p>
+              <p class="tl">解析并生成<span class="term" data-definition="目录（TOC，Table of Contents）：文章的结构化目录，让读者可以快速跳转到感兴趣的部分。">目录</span></p>
+              <p class="tl">返回完整数据</p>
+              <p class="tl">如果没有快照……</p>
+              <p class="tl">对代码块做语法高亮处理</p>
+              <p class="tl">取出原始内容</p>
+              <p class="tl">在后台（不阻塞返回）把处理好的内容保存为快照</p>
+              <p class="tl">这样下次就不用再处理了</p>
+              <p class="tl">返回带目录的文章数据</p>
+              <p class="tl">（这里是缓存查询的回退函数结束）</p>
+              <p class="tl"></p>
+              <p class="tl">把结果返回给调用方</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — CODE TRANSLATION: API Layer
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">API 层：薄薄的转发层</h2>
+
+        <p>对比一下 API 层的代码。它只做了三件事：接收请求、验证参数、转发给服务层。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export const</span> postBySlugQuery = <span class="code-function">createServerFn</span>({ method: <span class="code-string">"GET"</span> })</span>
+<span class="code-line">  .<span class="code-function">validator</span>((slug: <span class="code-function">string</span>) =&gt; slug)</span>
+<span class="code-line">  .<span class="code-function">handler</span>(<span class="code-keyword">async</span> ({ data: slug, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> { db, env, executionCtx } = context;</span>
+<span class="code-line">    <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostService.<span class="code-function">findPostBySlug</span>(</span>
+<span class="code-line">      { db, env, executionCtx },</span>
+<span class="code-line">      slug,</span>
+<span class="code-line">    );</span>
+<span class="code-line">    <span class="code-keyword">return</span> post;</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">创建一个「根据 slug 查文章」的<span class="term" data-definition="Server Function：在服务器端执行的函数，前端代码可以直接调用它，就像调用本地函数一样。这里用 createServerFn 来创建。">Server Function</span>，方式是 GET（只读）</p>
+              <p class="tl">验证输入参数：确保 slug 是字符串</p>
+              <p class="tl">定义处理函数：收到经过验证的 slug 和请求上下文</p>
+              <p class="tl">从上下文中取出数据库连接、环境变量、后台执行上下文</p>
+              <p class="tl">调用服务层的 findPostBySlug</p>
+              <p class="tl">把需要的上下文传给它</p>
+              <p class="tl">和文章的 slug</p>
+              <p class="tl">把结果直接返回给前端</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x26A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">对比两层代码</strong>
+            <p>API 层只有 9 行，没有任何业务逻辑。服务层有 20+ 行，包含缓存编排和数据转换。这就是「薄 API 层」——它只负责接线，不负责思考。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — DRAG AND DROP + QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">动手练一练</h2>
+
+        <p>把每项代码职责拖到它应该属于的那一层：</p>
+
+        <div class="dnd-container" id="dnd-module2">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="data">查询数据库获取文章列表</div>
+            <div class="dnd-chip" draggable="true" data-answer="service-cache">检查缓存是否过期，决定是否回源</div>
+            <div class="dnd-chip" draggable="true" data-answer="api">接收 HTTP 请求，验证参数</div>
+            <div class="dnd-chip" draggable="true" data-answer="service-ai">生成 AI 摘要</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="data">
+              <p class="dnd-zone-label">&#x1F5C4;&#xFE0F; 数据层（data/）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+            <div class="dnd-zone" data-correct="service-cache">
+              <p class="dnd-zone-label">&#x2699;&#xFE0F; 服务层（service）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+            <div class="dnd-zone" data-correct="service-ai">
+              <p class="dnd-zone-label">&#x2699;&#xFE0F; 服务层（service）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+            <div class="dnd-zone" data-correct="api">
+              <p class="dnd-zone-label">&#x1F50C; API 层（api/）</p>
+              <div class="dnd-zone-target">拖到这里</div>
+            </div>
+          </div>
+          <button class="btn" onclick="checkDnD('dnd-module2')">检查答案</button>
+          <button class="btn" onclick="resetDnD('dnd-module2')">重新开始</button>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的理解</h2>
+
+        <div class="quiz-container" id="quiz-module2">
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="正确！三层各司其职：数据层负责数据库查询，服务层负责业务逻辑和缓存编排，API 层负责接收请求。这样 AI 就能把代码放到正确的位置。"
+               data-explanation-wrong="不完全对。想想三层各自的职责：数据层只做数据库查询，服务层编排缓存和业务逻辑，API 层只接收请求。点赞的每一部分都应该放在对应的层里。">
+            <h3 class="quiz-question">你想给博客添加「文章点赞」功能。以下哪个做法最符合项目架构？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在一个文件里同时写数据库查询、缓存逻辑和 API 接口</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只在 API 层写代码，直接操作数据库</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>在 data/ 层写数据库查询，在 service 层写业务逻辑，在 api/ 层写 Server Function</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="完全正确！数据层只负责纯粹的数据库查询——查什么、怎么查。服务层在数据层之上增加缓存编排和业务逻辑。这就是关注点分离。"
+               data-explanation-wrong="想想图书馆的比喻：书架区只负责存放和取书，管理员才负责判断「先查目录还是直接去书架」。数据层就像书架——纯粹、专注。">
+            <h3 class="quiz-question">数据层（data/）和服务层（service）的核心区别是什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>数据层处理前端，服务层处理后端</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>数据层只做数据库查询，服务层编排缓存和业务逻辑</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>数据层更快，服务层更安全</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！这违反了关注点分离原则。数据库查询应该在 data/ 层，缓存编排应该在 service 层。混在一起的话，改缓存逻辑时可能会不小心破坏数据库查询，反之亦然。"
+               data-explanation-wrong="混合在一起看起来更方便，但实际上会让代码更脆弱。就像餐厅里厨师去端菜、服务员去炒菜——混乱又低效。分开才能各自专注、互不干扰。">
+            <h3 class="quiz-question">AI 帮你写了一段代码，把数据库查询和缓存逻辑写在了同一个函数里。根据项目规范，这有什么问题？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>违反了分层原则，应该把数据库查询放在 data/，缓存编排放在 service</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>没什么问题，放在一起效率更高</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>应该放在 API 层而不是 data 层</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module2')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module2')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-3">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">03</span>
+      <h1 class="module-title">请求的一生</h1>
+      <p class="module-subtitle">你在浏览器地址栏输入博客网址，按回车。0.5 秒后，完整的网页出现了。这 0.5 秒里，你的请求穿越了多少个「关卡」？</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Post Office Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">一封信的旅程</h2>
+
+        <p>想象你寄出一封信。它不会直接飞到收件人手里——它先到邮局分拣中心，按邮编分类，检查地址是否合法，再决定走哪条路线投递。</p>
+
+        <p>一个<span class="term" data-definition="HTTP 请求：浏览器与服务器之间的通信方式。你在浏览器输入网址或点击链接时，浏览器会向服务器发送一条 HTTP 请求，就像寄出一封信。">HTTP 请求</span>也是如此。从浏览器发出，要经过<span class="term" data-definition="CDN（Content Delivery Network，内容分发网络）：全球分布的服务器网络，把你的网站内容缓存在离用户最近的「驿站」里。用户访问时直接从最近的节点获取，不用绕远路到源服务器。">CDN</span>、<span class="term" data-definition="Worker：Cloudflare 的无服务器计算平台，一段运行在 CDN 边缘的代码。就像分散在全球各地的邮局分拣员，每个节点都能独立处理请求。">Worker</span>、路由层、<span class="term" data-definition="中间件（Middleware）：位于请求和处理程序之间的「安检关卡」。每个中间件负责检查或处理一项内容（比如身份、权限），然后决定是放行还是拒绝。">中间件</span>，最终变成你看到的网页。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F3E0;</div>
+            <h4 class="pattern-title">浏览器</h4>
+            <p class="pattern-desc">写信的人——发出请求</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F3EA;</div>
+            <h4 class="pattern-title">CDN 驿站</h4>
+            <p class="pattern-desc">附近的快递点——有缓存直接取</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F4E8;</div>
+            <h4 class="pattern-title">Worker 分拣中心</h4>
+            <p class="pattern-desc">按邮编分类——路由到正确的目的地</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F6E1;&#xFE0F;</div>
+            <h4 class="pattern-title">中间件安检</h4>
+            <p class="pattern-desc">逐项检查——身份、权限、频率</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5); color: white">&#x1F4E7;</div>
+            <h4 class="pattern-title">投递完成</h4>
+            <p class="pattern-desc">网页送达——用户看到结果</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">理解这条路径，你就能在出问题时知道该排查哪一层。是 CDN 没缓存？路由写错了？还是<span class="term" data-definition="D1：Cloudflare 的 SQLite 数据库服务，运行在边缘网络上。这是博客所有数据的最终存储位置。">数据库</span>查询太慢？</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — CODE TRANSLATION: Worker Entry (app-handler.ts)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">第一站：Worker 入口</h2>
+
+        <p>每个请求到达<span class="term" data-definition="Cloudflare Workers：Cloudflare 的无服务器计算平台，代码运行在离用户最近的 CDN 节点上。">Cloudflare Workers</span> 后，第一个执行的文件就是这个入口。它只有几行——职责是启动 Hono 应用并处理<span class="term" data-definition="i18n（internationalization）：国际化，让网站支持多种语言。这里用 Paraglide 库来实现中文/英文切换。">多语言</span>。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">import</span> { app } <span class="code-keyword">from</span> <span class="code-string">"@/lib/hono/routes"</span>;</span>
+<span class="code-line"><span class="code-keyword">import</span> { paraglideMiddleware } <span class="code-keyword">from</span> <span class="code-string">"@/paraglide/server"</span>;</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-keyword">export const</span> appWorkerHandler = {</span>
+<span class="code-line">  <span class="code-function">fetch</span>(request: Request, env: Env, ctx: ExecutionContext) {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">paraglideMiddleware</span>(request, () =&gt;</span>
+<span class="code-line">      app.<span class="code-function">fetch</span>(request, env, ctx)</span>
+<span class="code-line">    );</span>
+<span class="code-line">  },</span>
+<span class="code-line">};</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">导入 Hono 路由表——所有请求分发规则都在这里</p>
+              <p class="tl">导入多语言中间件——自动识别用户语言</p>
+              <p class="tl"></p>
+              <p class="tl">定义 Worker 的处理入口</p>
+              <p class="tl">每个请求都会调用这个 fetch 方法，传入请求体、环境变量和执行上下文</p>
+              <p class="tl">先经过多语言处理……</p>
+              <p class="tl">然后把请求交给 Hono 应用，由它决定路由到哪里</p>
+              <p class="tl">（Hono 内部会依次匹配路由规则）</p>
+              <p class="tl">——这就是全部代码。简单到不需要更多解释。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">极简入口</strong>
+            <p>整个入口只有 9 行代码。它不做任何业务逻辑，只负责「引路」——先处理语言，再交给路由表。这就是分层的力量：入口不需要知道后面发生了什么。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — DATA FLOW ANIMATION
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">追踪一封信的完整旅程</h2>
+
+        <p>点击「下一步」，跟随一个请求穿越所有关卡——从浏览器发出到最终看到网页。</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"用户在浏览器输入博客网址并按回车"},
+          {"highlight":"flow-actor-2","label":"请求到达 CDN 边缘节点，检查是否有缓存的页面","packet":true,"from":"flow-actor-1","to":"flow-actor-2"},
+          {"highlight":"flow-actor-3","label":"CDN 没有缓存，请求被转发到 Worker","packet":true,"from":"flow-actor-2","to":"flow-actor-3"},
+          {"highlight":"flow-actor-4","label":"Worker 接收请求，Hono 开始匹配路由规则","packet":true,"from":"flow-actor-3","to":"flow-actor-4"},
+          {"highlight":"flow-actor-4","label":"cacheMiddleware 检查 Cache API 是否有缓存"},
+          {"highlight":"flow-actor-4","label":"shieldMiddleware 验证路径是否合法"},
+          {"highlight":"flow-actor-5","label":"没有匹配到特殊路由，交给 TanStack Start 处理 SSR 渲染","packet":true,"from":"flow-actor-4","to":"flow-actor-5"},
+          {"highlight":"flow-actor-6","label":"SSR 渲染需要数据，查询 D1 数据库","packet":true,"from":"flow-actor-5","to":"flow-actor-6"},
+          {"highlight":"flow-actor-6","label":"D1 返回文章数据"},
+          {"highlight":"flow-actor-5","label":"TanStack 渲染完整的 HTML 页面"},
+          {"highlight":"flow-actor-1","label":"HTML 页面经过 CDN 缓存后返回浏览器，用户看到网页","packet":true,"from":"flow-actor-2","to":"flow-actor-1"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">&#x1F4BB;</div>
+              <span>浏览器</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">&#x26A1;</div>
+              <span>CDN</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">&#x1F4E8;</div>
+              <span>Worker</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">&#x1F5C2;</div>
+              <span>Hono</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">&#x1F3A8;</div>
+              <span>SSR</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-6">
+              <div class="flow-actor-icon">&#x1F5C4;&#xFE0F;</div>
+              <span>D1</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">点击「下一步」开始追踪</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">下一步</button>
+            <button class="btn flow-reset-btn">重新开始</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Hono routes.ts
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">分拣规则：Hono 路由表</h2>
+
+        <p>请求进入 Worker 后，<span class="term" data-definition="Hono：一个轻量级 Web 框架，负责根据 URL 路径把请求分发到对应的处理程序。就像邮局的分拣规则表——根据邮编决定信件去哪个区域。">Hono</span> 路由表就是分拣中心的规则手册。每条规则对应一个 URL 模式。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export const</span> app = <span class="code-keyword">new</span> <span class="code-function">Hono</span>&lt;{ Bindings: Env }&gt;();</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 1. 所有 GET 请求先检查缓存</span></span>
+<span class="code-line">app.<span class="code-function">get</span>(<span class="code-string">"*"</span>, cacheMiddleware);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 2. 公开 API 路由</span></span>
+<span class="code-line"><span class="code-keyword">const</span> publicApi = <span class="code-keyword">new</span> <span class="code-function">Hono</span>&lt;{ Bindings: Env }&gt;()</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/posts"</span>, postsListRoute)</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/post"</span>, postsDetailRoute)</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/tags"</span>, tagsRoute)</span>
+<span class="code-line">  .<span class="code-function">route</span>(<span class="code-string">"/search"</span>, searchRoute);</span>
+<span class="code-line">app.<span class="code-function">route</span>(<span class="code-string">"/api"</span>, publicApi);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 3. RSS、sitemap 等站点文档</span></span>
+<span class="code-line">app.<span class="code-function">route</span>(<span class="code-string">"/"</span>, siteDocumentsRoute);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 4. 认证路由（带限流和人机验证）</span></span>
+<span class="code-line">app.<span class="code-function">get</span>(<span class="code-string">"/api/auth/*"</span>, baseMiddleware, forwardAuthRequest);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 5. 防护层：未知路径返回缓存的 404</span></span>
+<span class="code-line">app.<span class="code-function">all</span>(<span class="code-string">"*"</span>, shieldMiddleware);</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 6. 兜底：交给 TanStack Start 渲染</span></span>
+<span class="code-line">app.<span class="code-function">all</span>(<span class="code-string">"*"</span>, (c) =&gt; {</span>
+<span class="code-line">  <span class="code-keyword">return</span> handler.<span class="code-function">fetch</span>(c.req.raw, {</span>
+<span class="code-line">    context: { env: c.env, executionCtx: <span class="code-function">getExecutionContext</span>(c) },</span>
+<span class="code-line">  });</span>
+<span class="code-line">});</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">创建 Hono 应用——这就是整个路由表</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 1：每个 GET 请求都先过一遍缓存中间件，看看有没有现成的响应</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 2：把 /api 下的公开接口按功能分组</p>
+              <p class="tl">/api/posts → 文章列表</p>
+              <p class="tl">/api/post → 文章详情</p>
+              <p class="tl">/api/tags → 标签</p>
+              <p class="tl">/api/search → 搜索</p>
+              <p class="tl">挂载到 /api 路径下</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 3：RSS feed、sitemap 等站点文档</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 4：登录/注册请求，先验证基础身份再转发</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 5：不属于上面任何路由的请求——用缓存的 404 页面拦截</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">规则 6：最后的保底——全部交给 TanStack Start 做服务器渲染</p>
+              <p class="tl">把环境变量和执行上下文传给 TanStack</p>
+              <p class="tl">TanStack 会根据 URL 匹配前端路由，加载数据并渲染 HTML</p>
+              <p class="tl">（规则按顺序执行，匹配到就停止）</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — CODE TRANSLATION: Middleware Chain
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">安检关卡：中间件链</h2>
+
+        <p>路由匹配到之后，还需要通过一系列安全检查。中间件就像机场安检——每一层检查不同的东西，层层递进。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 注入数据库连接</span>
+<span class="code-line"><span class="code-keyword">export const</span> dbMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> db = <span class="code-function">getDb</span>(context.env);</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { db } });</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-comment">// 解析用户会话</span>
+<span class="code-line"><span class="code-keyword">export const</span> sessionMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([dbMiddleware])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> auth = <span class="code-function">getAuth</span>({ db: context.db, env: context.env });</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = <span class="code-keyword">await</span> auth.api.<span class="code-function">getSession</span>({</span>
+<span class="code-line">      headers: <span class="code-function">getRequestHeaders</span>(),</span>
+<span class="code-line">    });</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { auth, session } });</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-comment">// 要求登录</span>
+<span class="code-line"><span class="code-keyword">export const</span> authMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([sessionMiddleware])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!context.session) <span class="code-keyword">throw</span> <span class="code-function">createAuthError</span>();</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session: context.session } });</span>
+<span class="code-line">  });</span>
+<span class="code-line"></span>
+<span class="code-comment">// 要求管理员权限</span>
+<span class="code-line"><span class="code-keyword">export const</span> adminMiddleware = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([authMiddleware])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ context, next }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">if</span> (context.session.user.role !== <span class="code-string">"admin"</span>)</span>
+<span class="code-line">      <span class="code-keyword">throw</span> <span class="code-function">createPermissionError</span>();</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session: context.session } });</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">第一关：创建数据库连接中间件</p>
+              <p class="tl">在请求到达业务代码之前，先把数据库连接准备好</p>
+              <p class="tl">从环境变量获取数据库连接</p>
+              <p class="tl">把数据库连接注入到上下文中，传给下一个中间件</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二关：创建会话解析中间件</p>
+              <p class="tl">它依赖第一关——先确保数据库连接存在</p>
+              <p class="tl">从请求头中解析出当前用户的会话信息</p>
+              <p class="tl">用数据库连接初始化认证系统</p>
+              <p class="tl">查找这个请求对应的用户会话</p>
+              <p class="tl">从请求头中获取认证信息</p>
+              <p class="tl">把认证系统和会话信息注入上下文</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第三关：登录验证中间件</p>
+              <p class="tl">它依赖第二关——先确保会话已解析</p>
+              <p class="tl">从上下文取出会话</p>
+              <p class="tl">如果没有会话（未登录），直接拒绝——抛出认证错误</p>
+              <p class="tl">已登录则放行，把会话传下去</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第四关：管理员权限验证</p>
+              <p class="tl">它依赖第三关——必须先登录</p>
+              <p class="tl">从上下文取出已验证的会话</p>
+              <p class="tl">检查用户角色是否为管理员</p>
+              <p class="tl">不是管理员，直接拒绝——抛出权限错误</p>
+              <p class="tl">是管理员则放行</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F9ED;</div>
+          <div class="callout-content">
+            <strong class="callout-title">层层递进的安检</strong>
+            <p>四个中间件形成一条链：dbMiddleware → sessionMiddleware → authMiddleware → adminMiddleware。每一层在前一层的基础上增加检查。如果中间任何一层检查不通过，请求直接被拒绝，不会到达后面的代码。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — PATTERN CARDS: Request Path Layers
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">请求路径的六层关卡</h2>
+
+        <p>一个请求从发出到最终看到网页，至少要经过这六层。每一层解决一个特定的问题。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x26A1;</div>
+            <h4 class="pattern-title">CDN 缓存</h4>
+            <p class="pattern-desc">全球边缘节点缓存页面。命中则直接返回，速度最快。就像小区门口的快递柜——不用去邮局。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F4E6;</div>
+            <h4 class="pattern-title">Cache API</h4>
+            <p class="pattern-desc">Worker 内部的缓存层。CDN 没命中时，再查 Cache API。就像邮局内部的待发件架子。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F5C2;</div>
+            <h4 class="pattern-title">Hono 路由器</h4>
+            <p class="pattern-desc">根据 URL 路径分发请求到对应的处理程序。就像邮局的分拣机按邮编分类。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F6E1;&#xFE0F;</div>
+            <h4 class="pattern-title">中间件链</h4>
+            <p class="pattern-desc">安全检查——身份验证、权限检查、频率限制。层层递进，不通过就拒绝。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-5)">
+            <div class="pattern-icon" style="background: var(--color-actor-5); color: white">&#x1F3A8;</div>
+            <h4 class="pattern-title">TanStack SSR</h4>
+            <p class="pattern-desc">服务器端渲染：加载数据、生成完整 HTML。就像分拣员把信件内容抄写到信纸上。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid #89b4fa">
+            <div class="pattern-icon" style="background: #89b4fa; color: white">&#x1F5C4;&#xFE0F;</div>
+            <h4 class="pattern-title">D1 数据库</h4>
+            <p class="pattern-desc">最终的数据来源。所有文章、评论、配置都存在这里。就像邮局的总仓库。</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">请求从上到下逐层穿透，每一层都有可能提前返回。如果 CDN 命中缓存，后面的层完全不用执行。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的理解</h2>
+
+        <div class="quiz-container" id="quiz-module3">
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！在路由表中，/api/posts 被 postsListRoute 处理。如果返回 404，说明这个路由可能没有正确挂载，或者 URL 路径写错了。而 /post/my-slug 走的是文章详情路由，两者是不同的处理程序。"
+               data-explanation-wrong="不完全对。想想路由表的结构：/api/posts 是公开 API 路由，由 postsListRoute 处理；而 /post/my-slug 是文章详情路由。问题很可能出在 Hono 路由匹配这一层——要么路由没正确挂载，要么 URL 模式不匹配。">
+            <h3 class="quiz-question">用户访问 /api/posts 返回 404，但 /post/my-slug 正常。问题最可能在请求路径的哪个环节？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>CDN 缓存出了问题</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Hono 路由匹配——检查 postsListRoute 是否正确挂载在 /api/posts 下</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>D1 数据库连接失败</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="完全正确！中间件链按依赖顺序执行：先建立数据库连接，再解析会话，然后验证登录状态，最后检查管理员权限。每一层依赖前一层的结果——没有数据库就无法解析会话，没有会话就无法验证登录。"
+               data-explanation-wrong="顺序很重要。想想安检的逻辑：你得先有护照（数据库连接），才能查登机牌（会话），然后验证身份（登录），最后检查舱位（管理员权限）。每一层都依赖前一层的结果。">
+            <h3 class="quiz-question">请求访问管理后台 /admin/settings 时，TanStack 中间件链的执行顺序是什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>dbMiddleware → sessionMiddleware → authMiddleware → adminMiddleware</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>adminMiddleware → authMiddleware → sessionMiddleware → dbMiddleware</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>authMiddleware → dbMiddleware → adminMiddleware → sessionMiddleware</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！项目中对 404 和 500 等错误页面设置了短缓存策略（约 10 秒）。这意味着错误页面不会被长期缓存——10 秒后 CDN 会重新回源请求，获取正确的页面。这是防御性缓存策略的典型做法。"
+               data-explanation-wrong="理解缓存策略很重要。如果错误页面被长期缓存，用户就会长时间看到错误页面。这就是为什么项目对 404/500 等错误设置了短缓存时间——大约 10 秒后 CDN 就会重新回源。">
+            <h3 class="quiz-question">如果 CDN 缓存了一个错误页面（500），用户多久后能看到正确页面？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>需要手动清除缓存，否则永远看到错误页面</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>大约 10 秒后——错误页面的缓存策略很短，之后 CDN 会重新回源获取</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>需要等 24 小时，直到缓存自然过期</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module3')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module3')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-4">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">04</span>
+      <h1 class="module-title">三层缓存——为什么你的博客这么快</h1>
+      <p class="module-subtitle">一个博客文章页面可能需要查询数据库、生成目录、格式化内容。但为什么加载只需要几百毫秒？因为绝大多数请求根本不需要碰数据库。</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Library Reservation Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">图书馆预约系统</h2>
+
+        <p>想象你去图书馆借一本书。你不会每次都跑到总馆仓库去翻找——图书馆有一套预约系统，越靠前的环节越快。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F4DA;</div>
+            <h4 class="pattern-title">书架</h4>
+            <p class="pattern-desc">就在你眼前的书架上直接拿——最快</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F9D1;&#x200D;&#x1F4BC;</div>
+            <h4 class="pattern-title">前台预约系统</h4>
+            <p class="pattern-desc">问管理员，她查一下预约记录告诉你</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F4E6;</div>
+            <h4 class="pattern-title">仓库</h4>
+            <p class="pattern-desc">管理员打电话给仓库确认有没有货</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F3DB;&#xFE0F;</div>
+            <h4 class="pattern-title">总馆</h4>
+            <p class="pattern-desc">最后才需要从总馆调书——最慢</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">在我们的博客中，这四层对应着<span class="term" data-definition="CDN（Content Delivery Network，内容分发网络）：全球分布的服务器网络，把网站内容缓存在离用户最近的节点上。就像小区门口的快递柜，不用去远处的仓库取。">CDN 边缘缓存</span>、<span class="term" data-definition="Cache API：浏览器和 Cloudflare Workers 内置的缓存接口，可以存储和读取 HTTP 响应。就像图书馆前台的预约记录本，查起来很快但容量有限。">Cache API</span>、<span class="term" data-definition="KV（Key-Value）：Cloudflare 的全球分布式键值存储服务。数据以「键→值」的形式存储在全球各地，读取速度比数据库快得多。就像图书馆的仓库管理系统，按编号就能找到书的位置。">KV 缓存</span>，最后才是<span class="term" data-definition="D1：Cloudflare 的 SQLite 数据库服务，运行在边缘网络上。这是博客所有数据的最终存储位置，也是最慢的一层。">D1 数据库</span>。</p>
+
+        <p>这个模块就是带你走一遍这套预约系统——理解缓存是理解博客为什么快的关键。当你让 AI 帮你加缓存时，你需要知道加在哪一层。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — LAYER TOGGLE DEMO: Three Cache Layers
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">三层缓存，各司其职</h2>
+
+        <p>缓存不是只有一层，而是三层。每一层的存储位置、存储内容和失效方式都不同。点击切换查看每一层。</p>
+
+        <div class="layer-demo">
+          <div class="layer-tabs">
+            <button class="layer-tab active" onclick="showLayer('layer-cdn', this)">CDN 层</button>
+            <button class="layer-tab" onclick="showLayer('layer-cache-api', this)">Cache API 层</button>
+            <button class="layer-tab" onclick="showLayer('layer-kv', this)">KV 层</button>
+          </div>
+          <div class="layer-viewport">
+            <div class="layer" id="layer-cdn" style="display:block">
+              <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)">
+                <span style="font-size:2.5rem">&#x1F30D;</span>
+                <div>
+                  <strong style="font-size:var(--text-lg)">CDN 边缘缓存</strong>
+                  <div style="color:var(--color-text-secondary);font-size:var(--text-sm)">Cloudflare 全球节点</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-accent-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-accent)">&#x1F4CD; 离用户最近</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-success-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-success)">&#x26A1; 最快</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-surface-warm);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">&#x1F4E5; 最大范围</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">存储内容</span>
+                  <strong style="font-size:var(--text-sm)">完整的 HTML 页面</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">失效方式</span>
+                  <strong style="font-size:var(--text-sm)">Cloudflare Purge API</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">响应速度</span>
+                  <strong style="font-size:var(--text-sm);color:var(--color-success)">~10ms</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">比喻</span>
+                  <strong style="font-size:var(--text-sm)">书架上的书——直接拿</strong>
+                </div>
+              </div>
+            </div>
+            <div class="layer" id="layer-cache-api" style="display:none">
+              <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)">
+                <span style="font-size:2.5rem">&#x1F9D1;&#x200D;&#x1F4BC;</span>
+                <div>
+                  <strong style="font-size:var(--text-lg)">Cache API</strong>
+                  <div style="color:var(--color-text-secondary);font-size:var(--text-sm)">Worker 内部缓存</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-accent-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-accent)">&#x1F5C2; Worker 内部</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-success-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-success)">&#x1F680; 很快</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-surface-warm);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">&#x1F4E4; 单节点</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">存储内容</span>
+                  <strong style="font-size:var(--text-sm)">HTTP 响应对象</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">失效方式</span>
+                  <strong style="font-size:var(--text-sm)">cache.put / cache.match</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">响应速度</span>
+                  <strong style="font-size:var(--text-sm);color:var(--color-success)">~30ms</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">比喻</span>
+                  <strong style="font-size:var(--text-sm)">前台预约记录——查一下就知道</strong>
+                </div>
+              </div>
+            </div>
+            <div class="layer" id="layer-kv" style="display:none">
+              <div style="display:flex;align-items:center;gap:var(--space-4);margin-bottom:var(--space-4)">
+                <span style="font-size:2.5rem">&#x1F4E6;</span>
+                <div>
+                  <strong style="font-size:var(--text-lg)">KV 缓存</strong>
+                  <div style="color:var(--color-text-secondary);font-size:var(--text-sm)">应用层数据缓存</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)">
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-accent-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-accent)">&#x1F310; 全球分布</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-warning-light);border-radius:var(--radius-sm);font-size:var(--text-sm);color:#e69819">&#x1F406; 较快</span>
+                <span style="padding:var(--space-1) var(--space-3);background:var(--color-surface-warm);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-secondary)">&#x1F4CA; 精细控制</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">存储内容</span>
+                  <strong style="font-size:var(--text-sm)">JSON 数据（文章、标签等）</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">失效方式</span>
+                  <strong style="font-size:var(--text-sm)">版本号 bump / 精确删除</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">响应速度</span>
+                  <strong style="font-size:var(--text-sm);color:var(--color-success)">~50ms</strong>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:var(--space-2) var(--space-3);background:var(--color-surface);border-radius:var(--radius-sm)">
+                  <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">比喻</span>
+                  <strong style="font-size:var(--text-sm)">仓库管理系统——按编号找</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="layer-description" id="layer-desc">CDN 缓存完整 HTML 页面，命中率最高。请求到达 CDN 时，如果有缓存直接返回，连 Worker 都不用启动。</p>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — CODE TRANSLATION: CacheService.get (Read-Through)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">核心机制：读穿缓存</h2>
+
+        <p><span class="term" data-definition="读穿缓存（Read-Through Cache）：一种缓存策略。先查缓存，有就直接返回；没有就查数据库，把结果存到缓存里再返回。就像前台管理员先翻预约本，没找到再打电话给仓库，查到后把结果记在预约本上。">读穿缓存</span>是最常用的缓存模式。先查缓存，命中就返回；没命中就去数据库查，顺便把结果存到缓存里。下次就不用查数据库了。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">get</span>&lt;T&gt;(</span>
+<span class="code-line">  context: BaseContext &amp; { executionCtx: <span class="code-type">ExecutionContext</span> },</span>
+<span class="code-line">  key: <span class="code-type">CacheKey</span>,</span>
+<span class="code-line">  schema: T,</span>
+<span class="code-line">  fetcher: () =&gt; <span class="code-type">Promise</span>&lt;z.infer&lt;T&gt;&gt;,</span>
+<span class="code-line">  options: { ttl?: <span class="code-type">Duration</span> } = {},</span>
+<span class="code-line">): <span class="code-type">Promise</span>&lt;z.infer&lt;T&gt;&gt; {</span>
+<span class="code-line">  <span class="code-keyword">const</span> { ttl = <span class="code-string">"1h"</span> } = options;</span>
+<span class="code-line">  <span class="code-keyword">const</span> serializedKey = <span class="code-function">serializeKey</span>(key);</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-comment">// 1. 先查 KV 缓存</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> kvData = <span class="code-keyword">await</span> env.KV.<span class="code-function">get</span>(serializedKey, <span class="code-string">"json"</span>)</span>
+<span class="code-line">    .<span class="code-function">catch</span>(<span class="code-comment">/* 容错 */</span>);</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">if</span> (kvData !== <span class="code-keyword">null</span>) {</span>
+<span class="code-line">    <span class="code-keyword">const</span> result = schema.<span class="code-function">safeParse</span>(kvData);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (result.success) <span class="code-keyword">return</span> result.data;</span>
+<span class="code-line">  }</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-comment">// 2. KV 未命中，回源数据库</span></span>
+<span class="code-line">  <span class="code-keyword">const</span> data = <span class="code-keyword">await</span> <span class="code-function">fetcher</span>();</span>
+<span class="code-line">  <span class="code-keyword">if</span> (data === <span class="code-keyword">null</span>) <span class="code-keyword">return</span> data;</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-comment">// 3. 后台写入缓存，不阻塞响应</span></span>
+<span class="code-line">  context.executionCtx.<span class="code-function">waitUntil</span>(</span>
+<span class="code-line">    <span class="code-function">set</span>(context, key, JSON.<span class="code-function">stringify</span>(data), { ttl }),</span>
+<span class="code-line">  );</span>
+<span class="code-line"></span>
+<span class="code-line">  <span class="code-keyword">return</span> data;</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">定义缓存读取函数——这是整个缓存系统的核心</p>
+              <p class="tl">接收执行上下文（用于后台任务）、缓存键、数据校验规则、数据获取函数和选项</p>
+              <p class="tl">缓存键——用来标识存的是什么数据</p>
+              <p class="tl">schema——用 Zod 校验缓存数据的格式是否合法</p>
+              <p class="tl">fetcher——缓存未命中时，从哪里获取原始数据（通常是数据库查询）</p>
+              <p class="tl">可选配置：缓存存活时间，默认 1 小时</p>
+              <p class="tl">函数返回类型与 fetcher 的返回类型一致</p>
+              <p class="tl">默认缓存 1 小时</p>
+              <p class="tl">把缓存键序列化成字符串格式</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第一步：尝试从 KV 存储读取数据</p>
+              <p class="tl">用 .catch() 容错——即使 KV 挂了也不影响主流程</p>
+              <p class="tl"></p>
+              <p class="tl">如果 KV 里有数据……</p>
+              <p class="tl">用 Zod schema 验证数据格式是否正确（防止脏数据）</p>
+              <p class="tl">验证通过就直接返回缓存数据——不需要查数据库！</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二步：KV 没有数据，调用 fetcher 回源数据库</p>
+              <p class="tl">如果数据库也没有，直接返回 null</p>
+              <p class="tl"></p>
+              <p class="tl">第三步：把数据存入缓存——但不等待完成</p>
+              <p class="tl">waitUntil 告诉系统「后台帮我存，不用等存完再返回」</p>
+              <p class="tl">这样用户不用等缓存写入就能拿到响应</p>
+              <p class="tl"></p>
+              <p class="tl">把数据返回给调用者</p>
+              <p class="tl">（下次同样的请求就能从 KV 直接拿到了）</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：waitUntil 的魔法</strong>
+            <p><span class="term" data-definition="executionCtx.waitUntil()：Cloudflare Workers 的一个 API，告诉平台「这个操作很重要，请在后台完成它，但不用等它结束再返回响应」。就像餐厅先上菜，后厨再慢慢洗碗。">executionCtx.waitUntil()</span> 告诉 Cloudflare「这个操作很重要，请在后台完成它，但不用等它结束再返回响应」。这就是为什么缓存写入不会拖慢用户看到的响应速度。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Version-Based Invalidation
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">最难的问题：缓存失效</h2>
+
+        <p>「计算机科学只有两个难题：缓存失效和命名。」—— Phil Karlton。这个项目用<span class="term" data-definition="版本号失效（Version-Based Invalidation）：一种缓存失效策略。给每组缓存数据分配一个版本号，版本号变化后，所有旧版本的缓存 key 自然失效。就像图书馆换了新系统后，旧的预约编号全部作废。">版本号失效</span>优雅地解决了缓存失效问题。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 读取当前版本号</span>
+<span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">getVersion</span>(context, namespace) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> key = <span class="code-string">`ver:${namespace}`</span>;</span>
+<span class="code-line">  <span class="code-keyword">const</span> v = <span class="code-keyword">await</span> context.env.KV.<span class="code-function">get</span>(key)</span>
+<span class="code-line">    .<span class="code-function">catch</span>(<span class="code-comment">/* 容错 */</span>);</span>
+<span class="code-line">  <span class="code-keyword">if</span> (v &amp;&amp; !Number.<span class="code-function">isNaN</span>(Number.<span class="code-function">parseInt</span>(v))) {</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-string">`v${v}`</span>;</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">return</span> <span class="code-string">"v1"</span>;</span>
+<span class="code-line">}</span>
+<span class="code-line"></span>
+<span class="code-line"><span class="code-comment">// 版本号 +1，旧缓存全部作废</span></span>
+<span class="code-line"><span class="code-keyword">export async function</span> <span class="code-function">bumpVersion</span>(context, namespace) {</span>
+<span class="code-line">  <span class="code-keyword">const</span> key = <span class="code-string">`ver:${namespace}`</span>;</span>
+<span class="code-line">  <span class="code-keyword">const</span> current = <span class="code-keyword">await</span> context.env.KV.<span class="code-function">get</span>(key)</span>
+<span class="code-line">    .<span class="code-function">catch</span>(<span class="code-comment">/* 容错 */</span>);</span>
+<span class="code-line">  <span class="code-keyword">let</span> next = 1;</span>
+<span class="code-line">  <span class="code-keyword">if</span> (current) {</span>
+<span class="code-line">    <span class="code-keyword">const</span> parsed = Number.<span class="code-function">parseInt</span>(current);</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!Number.<span class="code-function">isNaN</span>(parsed)) next = parsed + 1;</span>
+<span class="code-line">  }</span>
+<span class="code-line">  <span class="code-keyword">await</span> context.env.KV.<span class="code-function">put</span>(key, next.<span class="code-function">toString</span>());</span>
+<span class="code-line">}</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">获取某个缓存命名空间的当前版本号</p>
+              <p class="tl">版本号存在 KV 里，键名格式是 ver:命名空间</p>
+              <p class="tl">从 KV 读取版本号字符串</p>
+              <p class="tl">即使 KV 出错也不会崩溃（catch 容错）</p>
+              <p class="tl">如果读到了有效的版本号……</p>
+              <p class="tl">返回「v3」「v5」这样的格式，方便拼到缓存 key 里</p>
+              <p class="tl">如果没读到或格式不对</p>
+              <p class="tl">默认返回 v1</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">升级版本号——这是魔法发生的地方！</p>
+              <p class="tl">同一个键名 ver:命名空间</p>
+              <p class="tl">读取当前版本号</p>
+              <p class="tl">容错处理</p>
+              <p class="tl">默认从 1 开始</p>
+              <p class="tl">如果当前有版本号……</p>
+              <p class="tl">解析成数字</p>
+              <p class="tl">有效就 +1（比如 v3 变成 4）</p>
+              <p class="tl">写回 KV——版本号升级完成</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-info" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F9E9;</div>
+          <div class="callout-content">
+            <strong class="callout-title">为什么版本号这么巧妙？</strong>
+            <p>缓存 key 包含版本号（如 <code>v3/post/hello-world</code>）。bumpVersion 把版本号从 3 变成 4，所有以 v3 开头的旧 key 永远不会被查到——它们等效于「不存在」。不需要逐个删除，一次 bump 就能让整个命名空间的所有旧缓存失效。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — DATA FLOW ANIMATION: Request Through Cache Layers
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">追踪一次请求的缓存之旅</h2>
+
+        <p>点击「下一步」，看一个博客页面请求如何穿越三层缓存——绝大多数请求会在前三层就得到结果。</p>
+
+        <div class="flow-animation" data-steps='[
+          {"highlight":"flow-actor-1","label":"用户请求博客文章页面 /post/hello-world"},
+          {"highlight":"flow-actor-2","label":"检查 CDN 边缘缓存 —— 如果命中，直接返回 HTML（最快路径）","packet":true,"from":"flow-actor-1","to":"flow-actor-2"},
+          {"highlight":"flow-actor-3","label":"CDN 未命中，请求到达 Worker，检查 Cache API","packet":true,"from":"flow-actor-2","to":"flow-actor-3"},
+          {"highlight":"flow-actor-4","label":"Cache API 未命中，进入业务层，检查 KV 缓存","packet":true,"from":"flow-actor-3","to":"flow-actor-4"},
+          {"highlight":"flow-actor-4","label":"KV 缓存中有数据（cache hit），直接返回"},
+          {"highlight":"flow-actor-5","label":"KV 也未命中（cache miss），查询 D1 数据库","packet":true,"from":"flow-actor-4","to":"flow-actor-5"},
+          {"highlight":"flow-actor-5","label":"D1 返回文章数据（原始数据）"},
+          {"highlight":"flow-actor-4","label":"后台用 waitUntil 把数据写入 KV 缓存（不影响返回速度）","packet":true,"from":"flow-actor-5","to":"flow-actor-4"},
+          {"highlight":"flow-actor-1","label":"数据返回，CDN 和 Cache API 也缓存一份，用户看到页面","packet":true,"from":"flow-actor-4","to":"flow-actor-1"}
+        ]'>
+          <div class="flow-actors">
+            <div class="flow-actor" id="flow-actor-1">
+              <div class="flow-actor-icon">&#x1F4BB;</div>
+              <span>浏览器</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-2">
+              <div class="flow-actor-icon">&#x1F30D;</div>
+              <span>CDN</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-3">
+              <div class="flow-actor-icon">&#x1F5C2;</div>
+              <span>Cache API</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-4">
+              <div class="flow-actor-icon">&#x1F4E6;</div>
+              <span>KV</span>
+            </div>
+            <div class="flow-actor" id="flow-actor-5">
+              <div class="flow-actor-icon">&#x1F5C4;&#xFE0F;</div>
+              <span>D1</span>
+            </div>
+          </div>
+
+          <div class="flow-packet" id="flow-packet"></div>
+
+          <div class="flow-step-label" id="flow-label">点击「下一步」开始追踪</div>
+
+          <div class="flow-controls">
+            <button class="btn flow-next-btn">下一步</button>
+            <button class="btn flow-reset-btn">重新开始</button>
+            <span class="flow-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — CODE TRANSLATION: Service Layer Using Cache
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">组合在一起：服务层如何使用缓存</h2>
+
+        <p>上面看到的<span class="term" data-definition="CacheService：项目中的缓存服务模块，封装了 KV 读写、版本号管理和缓存失效逻辑。所有功能模块通过它来访问缓存，不用关心底层实现。">CacheService</span> 和版本号机制，组合起来就是这样的：</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">export async function</span> <span class="code-function">findPostBySlug</span>(context, slug) {
+  <span class="code-comment">// 1. 获取当前缓存版本号</span>
+  <span class="code-keyword">const</span> version = <span class="code-keyword">await</span> CacheService
+    .<span class="code-function">getVersion</span>(context, <span class="code-string">"posts:detail"</span>);
+  <span class="code-comment">// 2. 将版本号拼入缓存 key</span>
+  <span class="code-keyword">const</span> cacheKey = [version, <span class="code-string">"post"</span>, slug];
+
+  <span class="code-comment">// 3. 读穿缓存：先查 KV，miss 时回源数据库</span>
+  <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> CacheService.<span class="code-function">get</span>(
+    context,
+    cacheKey,
+    PostWithTocSchema,
+    <span class="code-keyword">async</span> () => {
+      <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> PostRepo
+        .<span class="code-function">findPostBySlug</span>(context.db, slug);
+      <span class="code-keyword">if</span> (!post) <span class="code-keyword">return null</span>;
+      <span class="code-comment">// ... 处理高亮、目录生成 ...</span>
+      <span class="code-keyword">return</span> processedPost;
+    },
+  );
+  <span class="code-keyword">return</span> post;
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">通过 slug（URL 中的文章标识）查找文章——这是最常用的操作</p>
+              <p class="tl"></p>
+              <p class="tl">先拿到文章详情的当前缓存版本号（比如 v3）</p>
+              <p class="tl">从 KV 存储读取版本号</p>
+              <p class="tl"></p>
+              <p class="tl">把版本号拼进缓存 key：[&quot;v3&quot;, &quot;post&quot;, &quot;hello-world&quot;]</p>
+              <p class="tl">版本号变化后，旧 key 永远不会被查到</p>
+              <p class="tl"></p>
+              <p class="tl">调用 CacheService.get——自动处理缓存读写</p>
+              <p class="tl">传入缓存键</p>
+              <p class="tl">传入数据校验 schema</p>
+              <p class="tl">传入 fetcher——只有缓存未命中时才会执行</p>
+              <p class="tl">从数据库查询文章</p>
+              <p class="tl">如果数据库也没有，返回 null</p>
+              <p class="tl">有文章的话处理高亮、生成目录</p>
+              <p class="tl">返回处理好的文章（会被自动缓存）</p>
+              <p class="tl"></p>
+              <p class="tl">返回文章数据——调用者完全不知道背后有缓存</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — PATTERN CARDS: Three Invalidation Strategies
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">三种缓存失效策略</h2>
+
+        <p>缓存写入容易，失效才是难题。这个项目使用三种策略，每种适用于不同的场景。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F504;</div>
+            <h4 class="pattern-title">版本号 bump</h4>
+            <p class="pattern-desc">一次 bump 就能让整个命名空间的所有旧缓存失效。不知道有哪些 key 也没关系。用于文章发布、全站刷新等场景。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F3AF;</div>
+            <h4 class="pattern-title">精确 key 删除</h4>
+            <p class="pattern-desc">直接删除指定的缓存 key。精准、高效，但需要知道要删哪个 key。用于删除评论、更新单篇等场景。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F30D;</div>
+            <h4 class="pattern-title">CDN Purge API</h4>
+            <p class="pattern-desc">调用 Cloudflare API 清除全球 CDN 缓存。代价最大但覆盖最全，用于站点级更新、域名切换等场景。</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">实际更新文章时，三种策略会组合使用：先 bump 版本号让 KV 缓存失效，再调用 CDN Purge API 清除边缘缓存。这就是为什么管理员更新文章后，全球用户很快就能看到最新版本。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 8 — QUIZ
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的理解</h2>
+
+        <div class="quiz-container" id="quiz-module4">
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！三层缓存中，CDN 层最可能没有被正确失效。KV 版本号 bump 和 Cache API 的失效通常是自动化的（服务端代码控制），但 CDN 缓存需要额外调用 Cloudflare Purge API 来清除。如果 Purge 请求失败或配置有误，全球用户就会长时间看到旧版本。"
+               data-explanation-wrong="想想三层缓存的控制方式有什么不同。KV 和 Cache API 的失效是服务端代码直接控制的（bumpVersion、cache.put），但 CDN 缓存在 Cloudflare 的全球节点上，需要通过专门的 API 来清除。哪一层最容易「漏掉」？">
+            <h3 class="quiz-question">管理员更新了一篇文章，但用户仍然看到旧版本。三层缓存中，哪一层最可能没有被正确失效？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>CDN 层——Purge API 可能没有成功调用</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>KV 层——版本号可能没有被 bump</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>D1 数据库——数据可能没有写入成功</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="Exactly! 一次 bumpVersion 调用就能让整个命名空间的所有旧缓存 key 失效——不需要知道有哪些 key，也不需要遍历删除。这就像图书馆换了新系统后，旧的预约编号全部自动作废，不需要一个个去注销。"
+               data-explanation-wrong="想想版本号是怎么拼进缓存 key 的。每个 key 都包含版本号前缀（如 v3/post/hello-world）。当版本号变成 4，所有 v3 开头的 key 会怎样？">
+            <h3 class="quiz-question">版本号失效相比逐个删除缓存 key，最大的优势是什么？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>版本号失效更节省 KV 存储空间</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>一次 bump 就能让整个命名空间的所有旧 key 失效，不需要知道有哪些 key</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>版本号可以设置更长的缓存过期时间</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！CacheService.get 的 KV.get 调用后面有 .catch() 容错处理。如果 KV 不可用，会静默失败并 fallthrough 到 fetcher 回源数据库。用户可能感觉稍慢（因为少了缓存加速），但功能完全正常。"
+               data-explanation-wrong="看看 CacheService.get 代码中的 .catch() 处理。当 KV.get 失败时，错误被 catch 住了，kvData 变量是 undefined，代码会继续执行到 fetcher()。这说明什么？">
+            <h3 class="quiz-question">如果 KV 服务暂时不可用，findPostBySlug 还能工作吗？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>能——KV.get 有 .catch() 容错，会 fallthrough 到 fetcher 回源数据库</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>不能——KV 是必需的，没有缓存就无法工作</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>能——但会返回错误页面告诉用户稍后重试</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module4')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module4')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section><section class="module" id="module-5">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">门卫系统——身份验证与安全</h1>
+      <p class="module-subtitle">当有人试图登录你的博客管理后台，系统怎么知道他是不是真的你？如果有人用机器人疯狂注册账号，系统又怎么拦住他？答案是：层层递进的安全检查链。</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Airport Security Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">机场安检的四道关卡</h2>
+
+        <p>想象你从进入机场到登上飞机，要经过四道检查。每一道检查不同的东西，缺一不可。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x2708;&#xFE0F;</div>
+            <h4 class="pattern-title">值机柜台</h4>
+            <p class="pattern-desc">出示身份证——确认你有航班信息，建立基本连接</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F9ED;</div>
+            <h4 class="pattern-title">安检门</h4>
+            <p class="pattern-desc">扫描行李和身体——确认你没带危险物品，是合法旅客</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F6AA;</div>
+            <h4 class="pattern-title">登机口</h4>
+            <p class="pattern-desc">核对登机牌——确认你有合法身份和登机权限</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F3F3;&#xFE0F;</div>
+            <h4 class="pattern-title">VIP 通道</h4>
+            <p class="pattern-desc">检查你的会员等级——只有头等舱才能走这里</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">博客的安全系统也是如此——每一层检查不同的东西：<span class="term" data-definition="身份验证（Authentication）：确认「你是谁」的过程。就像机场安检时检查你的身份证，确认你的身份。">身份验证</span>（你是谁）→ <span class="term" data-definition="权限检查（Authorization）：确认「你能做什么」的过程。身份验证确认你是张三，权限检查确认张三能不能进管理后台。">权限检查</span>（你能做什么）→ <span class="term" data-definition="限流（Rate Limiting）：限制某个操作在一段时间内能执行的次数。就像机场一次只放一定数量的旅客通过安检，防止人流过大。">限流</span>（你做了多少次）→ <span class="term" data-definition="人机验证（Bot Verification）：区分真人和自动程序的技术。就像机场安检门能检测出金属物品，Turnstile 能检测出机器人。">人机验证</span>（你是不是真人）。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — CODE TRANSLATION: Middleware Chain (4 Layers)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">中间件链：四层安检代码</h2>
+
+        <p>在代码中，这四道安检叫做<span class="term" data-definition="中间件（Middleware）：位于请求和最终处理逻辑之间的「检查层」。每个中间件做一件事（查身份、查权限等），通过了才能进入下一个。就像机场安检的每一道关卡。">中间件</span>。它们层层嵌套——就像安检门必须在值机之后，登机口必须在安检之后。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 第一层：建立数据库连接</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">dbMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> }).<span class="code-function">server</span>(</span>
+<span class="code-line">  <span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> db = <span class="code-function">getDb</span>(context.env);</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { db } });</span>
+<span class="code-line">  },</span>
+<span class="code-line">);</span>
+
+<span class="code-comment">// 第二层：识别用户身份（通过 cookie）</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">sessionMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([<span class="code-function">dbMiddleware</span>])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> auth = <span class="code-function">getAuth</span>({ db: context.db, env: context.env });</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = <span class="code-keyword">await</span> auth.api.<span class="code-function">getSession</span>({</span>
+<span class="code-line">      headers: <span class="code-function">getRequestHeaders</span>(),</span>
+<span class="code-line">    });</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { auth, session } });</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">第一层：数据库连接中间件——就像值机柜台先确认你的航班信息</p>
+              <p class="tl">创建一个中间件，它只做一件事</p>
+              <p class="tl">从环境配置中获取数据库连接</p>
+              <p class="tl">把数据库连接传给后面的中间件使用</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二层：会话中间件——就像安检门扫描你的身份证</p>
+              <p class="tl">声明它依赖 dbMiddleware（必须先过值机才能过安检）</p>
+              <p class="tl">在 dbMiddleware 之后执行</p>
+              <p class="tl">用数据库连接创建<span class="term" data-definition="Better Auth：一个开源的 TypeScript 认证库，为 Web 应用提供开箱即用的登录、注册、会话管理等功能。这个博客项目用它处理所有身份验证逻辑，不用自己从零写。">认证服务</span></p>
+              <p class="tl">从请求头中读取 cookie，查询这个用户是否有有效的会话</p>
+              <p class="tl">读取请求头中的 cookie 信息</p>
+              <p class="tl"></p>
+              <p class="tl"><span class="term" data-definition="Session（会话）：服务器为登录用户创建的临时身份凭证。就像酒店入住后拿到的房卡，有了它就不用每次都出示身份证。会话信息存在服务端，客户端只保存一个 session cookie。">session</span>——认证服务和会话信息传给后面的中间件</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 第三层：要求必须登录</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">authMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([<span class="code-function">sessionMiddleware</span>])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = context.session;</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!session) {</span>
+<span class="code-line">      <span class="code-keyword">throw</span> <span class="code-function">createAuthError</span>();</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session } });</span>
+<span class="code-line">  });</span>
+
+<span class="code-comment">// 第四层：要求管理员角色</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">adminMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([<span class="code-function">authMiddleware</span>])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ context, next }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = context.session;</span>
+<span class="code-line">    <span class="code-keyword">if</span> (session.user.role !== <span class="code-string">"admin"</span>) {</span>
+<span class="code-line">      <span class="code-keyword">throw</span> <span class="code-function">createPermissionError</span>();</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session } });</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">第三层：认证中间件——就像登机口核对登机牌，必须登录才能通过</p>
+              <p class="tl">声明它依赖 sessionMiddleware（必须先过安检才能到登机口）</p>
+              <p class="tl">在 sessionMiddleware 之后执行</p>
+              <p class="tl">取出上一层传下来的会话信息</p>
+              <p class="tl">如果没有会话（用户没登录）...</p>
+              <p class="tl">直接抛出认证错误——请求被拦截！就像没登机牌不能登机</p>
+              <p class="tl"></p>
+              <p class="tl">通过了，把会话信息继续传下去</p>
+              <p class="tl"></p>
+              <p class="tl">第四层：管理员中间件——就像 VIP 通道检查会员等级</p>
+              <p class="tl">声明它依赖 authMiddleware（必须先登录才能检查权限）</p>
+              <p class="tl">在 authMiddleware 之后执行</p>
+              <p class="tl">取出会话信息</p>
+              <p class="tl">如果用户角色不是 admin...</p>
+              <p class="tl">抛出权限错误——你不是 VIP，不能走这条通道！</p>
+              <p class="tl"></p>
+              <p class="tl">全部通过，放行进入管理后台</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — GROUP CHAT: Security Components Talking
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">安全系统内部对话</h2>
+
+        <p>当有人尝试登录时，各个安全组件是如何协同工作的？让我们偷听一下：</p>
+
+        <div class="chat-window" id="chat-module5">
+          <div class="chat-messages">
+
+            <div class="chat-message" data-msg="0" data-sender="browser" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">浏</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">浏览器</span>
+                <p>有人要登录管理后台！POST /api/auth/sign-in/email</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="1" data-sender="turnstile" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">验</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Turnstile 人机验证</span>
+                <p>先过我这关——检查是不是真人操作......</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="2" data-sender="turnstile" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">验</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Turnstile 人机验证</span>
+                <p>是真人，放行！&#x2705;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="3" data-sender="ratelimiter" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">限</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">限流器</span>
+                <p>查了一下这个 IP 的请求记录——1 分钟内已经试了 4 次，还剩最后 1 次机会！</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="4" data-sender="session" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">会</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">会话管理</span>
+                <p>验证密码中...... 通过！生成会话 <span class="term" data-definition="Cookie：网站存在你浏览器里的一小段数据。就像图书馆在你借书证上盖的章，下次来不用重新办证，亮出借书证就行。">cookie</span>，有效期 5 分钟 &#x1F511;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="5" data-sender="auth" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">认</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">认证服务</span>
+                <p>检查注册邮箱是否是管理员邮箱...... 是！通过 <span class="term" data-definition="Database Hook（数据库钩子）：在数据写入数据库之前或之后自动执行的代码。就像入职流程中 HR 会自动检查你的学历——如果符合条件就自动加分，不需要手动操作。">databaseHook</span> 自动设置角色为 admin &#x1F451;</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="chat-typing" id="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-module5-typing-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">下一条</button>
+            <button class="btn chat-all-btn">自动播放</button>
+            <button class="btn chat-reset-btn">重新开始</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Protected Auth Paths
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">认证路由：多重防护的登录入口</h2>
+
+        <p>上面的中间件是单个检查工具。但真正使用时，它们会组合在一起形成多重防护。<span class="term" data-definition="Hono：一个轻量级 Web 框架，用于构建 API 路由。在这个项目中负责处理所有 /api/ 开头的请求，比如登录、注册、文章列表等。">Hono</span> 路由中的认证端点就是这样被保护的：</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">const</span> protectedAuthPaths = [
+  <span class="code-string">"/api/auth/sign-in/email"</span>,
+  <span class="code-string">"/api/auth/sign-up/email"</span>,
+  <span class="code-string">"/api/auth/request-password-reset"</span>,
+  <span class="code-string">"/api/auth/send-verification-email"</span>,
+] <span class="code-keyword">as const</span>;
+
+protectedAuthPaths.<span class="code-function">forEach</span>((path) =&gt; {
+  app.<span class="code-function">post</span>(
+    path,
+    <span class="code-function">baseMiddleware</span>,
+    <span class="code-function">turnstileMiddleware</span>,
+    <span class="code-function">rateLimitMiddleware</span>({
+      capacity: 5, interval: <span class="code-string">"1m"</span>,
+      identifier: createRateLimiterIdentifier,
+    }),
+    <span class="code-function">rateLimitMiddleware</span>({
+      capacity: 10, interval: <span class="code-string">"1h"</span>,
+      identifier: (c) =&gt; <span class="code-string">`hourly:`</span> + <span class="code-function">createRateLimiterIdentifier</span>(c),
+    }),
+    forwardAuthRequest,
+  );
+});</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">列出所有需要多重防护的认证路径</p>
+              <p class="tl">邮箱登录</p>
+              <p class="tl">邮箱注册</p>
+              <p class="tl">请求重置密码</p>
+              <p class="tl">发送验证邮件</p>
+              <p class="tl">这些路径都是攻击者最喜欢瞄准的目标</p>
+              <p class="tl"></p>
+              <p class="tl">给每个认证路径都套上相同的防护层</p>
+              <p class="tl">为每个路径注册一个 POST 请求处理</p>
+              <p class="tl">第一关：注入数据库连接和基本认证信息</p>
+              <p class="tl">第二关：<span class="term" data-definition="Cloudflare Turnstile：Cloudflare 提供的人机验证服务。它在后台悄悄分析用户行为（鼠标移动、点击模式等），判断是真人还是机器人。用户通常不需要做任何操作，比传统验证码体验好得多。">Cloudflare Turnstile</span> 人机验证——挡住机器人</p>
+              <p class="tl">第三关：限流——每分钟最多 5 次请求</p>
+              <p class="tl">限制容量 5 次，时间窗口 1 分钟</p>
+              <p class="tl">用 <span class="term" data-definition="IP（Internet Protocol）地址：设备在网络中的唯一地址，就像你的家庭住址。服务器可以通过 IP 地址识别请求来自哪台设备，限流器用它来追踪同一个设备的请求次数。">IP</span> 地址作为限流标识</p>
+              <p class="tl">第四关：另一个限流——每小时最多 10 次请求</p>
+              <p class="tl">限制容量 10 次，时间窗口 1 小时</p>
+              <p class="tl">同样用 IP 但加上 hourly: 前缀，独立计数</p>
+              <p class="tl">全部通过后，才把请求转发给 Better Auth 处理</p>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">注意这里用了<strong>两层</strong><span class="term" data-definition="限流（Rate Limiting）：限制某个操作在一段时间内能执行的次数。就像健身房限制同时在场人数，超过就要排队等候。">限流</span>：短窗口（每分钟 5 次）防突发攻击，长窗口（每小时 10 次）防慢速暴力破解。这就像机场安检既限制每分钟通过人数，也限制每小时总通过人数。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — NUMBERED STEP CARDS: Login Flow
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">一次登录请求的完整旅程</h2>
+
+        <p>当用户点击「登录」按钮，请求要经过这些检查才能成功：</p>
+
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>值机柜台：建立基础连接</strong>
+              <p>baseMiddleware 注入数据库连接和认证服务，就像在值机柜台确认你的航班信息</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>安检门：人机验证</strong>
+              <p>turnstileMiddleware 检查 Cloudflare Turnstile 令牌，确认你是真人操作而不是脚本</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>人流管控：短窗口限流</strong>
+              <p>每分钟最多 5 次登录尝试。就像安检一次只放一定数量的人进去，防止人流过大</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <strong>全天管控：长窗口限流</strong>
+              <p>每小时最多 10 次。即使每次间隔超过 1 分钟绕过了短窗口，也会在这里被拦住</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <strong>登机：验证密码并签发会话</strong>
+              <p>全部检查通过后，<span class="term" data-definition="Better Auth：一个开源的 TypeScript 认证库。它帮你处理密码验证、会话签发、邮箱验证等所有认证相关的脏活累活，让开发者不用从零实现安全系统。">Better Auth</span> 验证密码、签发 <span class="term" data-definition="Session Cookie：登录成功后服务器在你浏览器中设置的一小段数据。就像酒店的房卡，后续访问带着它就能证明「我已经登录过了」，不用每次都输密码。">session cookie</span>，用户成功登录</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — CALLOUT: Durable Objects + Auth Config
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">限流的秘密武器</h2>
+
+        <p>限流器是怎么记住「这个 IP 已经请求了 4 次」的？普通的<span class="term" data-definition="Cloudflare Workers：Cloudflare 的无服务器计算平台。每个请求都由一个全新的 Worker 实例处理，不保留上一次请求的任何记忆——就像每次都是一个新员工来处理你的请求。">Cloudflare Workers</span> 是<span class="term" data-definition="无状态（Stateless）：每次请求都是全新开始，不记得之前发生过什么。就像一个每天失忆的人，每天都要从头认识你。">无状态</span>的，每次请求都是全新开始。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">export const</span> <span class="code-function">createRateLimitMiddleware</span> = (options) =&gt; {
+  <span class="code-keyword">return</span> <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })
+    .<span class="code-function">middleware</span>([<span class="code-function">sessionMiddleware</span>])
+    .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {
+      <span class="code-keyword">const</span> identifier =
+        <span class="code-function">getRequestHeader</span>(<span class="code-string">"cf-connecting-ip"</span>)
+        || session?.user.id || <span class="code-string">"unknown"</span>;
+      <span class="code-keyword">const</span> uniqueIdentifier = <span class="code-string">`${identifier}:${scope}`</span>;
+
+      <span class="code-comment">// 用 Durable Object 实现分布式限流</span>
+      <span class="code-keyword">const</span> id = context.env.RATE_LIMITER
+        .<span class="code-function">idFromName</span>(uniqueIdentifier);
+      <span class="code-keyword">const</span> rateLimiter = context.env.RATE_LIMITER
+        .<span class="code-function">get</span>(id);
+
+      <span class="code-keyword">const</span> result = <span class="code-keyword">await</span> rateLimiter
+        .<span class="code-function">checkLimit</span>(options);
+
+      <span class="code-keyword">if</span> (!result.allowed) {
+        <span class="code-keyword">throw</span> <span class="code-function">createRateLimitError</span>(result.retryAfterMs);
+      }
+
+      <span class="code-keyword">return</span> <span class="code-function">next</span>();
+    });
+};</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">创建一个限流中间件工厂——可以按需配置限流参数</p>
+              <p class="tl">返回一个中间件</p>
+              <p class="tl">依赖 sessionMiddleware 获取用户信息</p>
+              <p class="tl">在会话中间件之后执行</p>
+              <p class="tl"></p>
+              <p class="tl">获取请求者的 IP 地址作为身份标识</p>
+              <p class="tl">如果拿不到 IP，就用用户 ID 或 &quot;unknown&quot;</p>
+              <p class="tl">拼上 scope 前缀，区分不同场景的限流</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">关键：用 Durable Object 来实现限流！</p>
+              <p class="tl">根据唯一标识创建一个 Durable Object 实例</p>
+              <p class="tl">同一个 IP + scope 总是对应同一个实例</p>
+              <p class="tl">获取这个实例的引用</p>
+              <p class="tl"></p>
+              <p class="tl">向 Durable Object 查询：这个 IP 还能继续请求吗？</p>
+              <p class="tl"></p>
+              <p class="tl">如果超出了限制...</p>
+              <p class="tl">抛出限流错误，告诉用户多久后才能重试</p>
+              <p class="tl"></p>
+              <p class="tl">没超限，正常放行</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：Durable Object 是有状态的「记忆体」</strong>
+            <p>普通 <span class="term" data-definition="Worker：在 Cloudflare Workers 平台上运行的无服务器函数。每个请求都由一个全新的 Worker 处理，就像每个电话都由一个新接线员接听，不记得之前的通话。">Worker</span> 是无状态的——每次请求都是全新开始。但 <span class="term" data-definition="Durable Object（持久对象）：Cloudflare Workers 的有状态组件。它可以记住之前请求的信息，就像一个有记事本的接线员，能记住你之前打过几次电话。限流器用它来追踪每个 IP 的请求次数。">Durable Object</span> 可以记住状态！限流器就是用它来追踪每个 IP 已经请求了多少次。同一个 IP 总是会路由到同一个 Durable Object 实例，就像你的专属客服只服务你一个人。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ: Security Scenarios
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的安全直觉</h2>
+
+        <div class="quiz-container" id="quiz-module5">
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！authMiddleware 是第三层中间件，它的作用就是检查用户是否已登录（session 存在）。如果没有登录就直接抛出认证错误，请求根本不会到达你的业务逻辑。这就像登机口没票不让上飞机。"
+               data-explanation-wrong="想想「只有登录用户」这个条件对应哪一层安检。dbMiddleware 只管数据库连接，sessionMiddleware 只是识别身份（可以是空的），adminMiddleware 检查的是管理员角色。哪一层专门拦住「没登录」的人？">
+            <h3 class="quiz-question">你想添加一个「只有登录用户才能发表评论」的功能。应该在 server function 上使用哪个中间件？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>sessionMiddleware——它能识别用户身份</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>authMiddleware——它确保用户已登录</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>adminMiddleware——它检查用户权限</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly! 这个脚本会被至少两层拦住。首先是 Turnstile 人机验证——机器人拿不到有效的验证令牌，连第一关都过不了。即使侥幸通过，RateLimiter 的短窗口限流（每分钟 5 次）也会在前 5 次后直接拒绝请求。这就像机场安检既查证件又控制人流，双重保险。"
+               data-explanation-wrong="想想每秒 100 次请求意味着什么。1 分钟就是 6000 次请求。对比一下代码中的限流配置：每分钟最多 5 次，每小时最多 10 次。另外，机器人能通过 Cloudflare 的人机验证吗？">
+            <h3 class="quiz-question">有人用脚本每秒发 100 次登录请求。系统能在哪一层拦住他？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只有 baseMiddleware 能拦住——它负责处理所有请求</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只有 RateLimiter 能拦住——它是专门做限流的</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Turnstile 和 RateLimiter 都会拦住——双重防护</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！Better Auth 的 databaseHooks 在用户创建时会检查邮箱地址是否等于环境变量中配置的管理员邮箱。如果是，就自动把用户角色设为 admin。这样就避免了手动分配管理员权限——第一个用管理员邮箱注册的用户自动获得最高权限。"
+               data-explanation-wrong="看看代码中的条件判断：`user.email === ADMIN_EMAIL`。这不是在验证邮箱格式，而是在拿注册邮箱和一个特殊的环境变量做比较。这个特殊的邮箱有什么特别之处？">
+            <h3 class="quiz-question">Better Auth 的 databaseHooks.user.create.before 做了什么？为什么新用户注册时需要检查邮箱？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>检查邮箱是否是管理员邮箱，如果是则自动设置 admin 角色</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>验证邮箱格式是否正确，防止无效邮箱注册</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>检查邮箱是否已被注册，防止重复注册</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+<section class="module" id="module-6">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">06</span>
+      <h1 class="module-title">幕后工厂——异步任务系统</h1>
+      <p class="module-subtitle">有人在你的博客上留了一条评论。几秒后，你收到一封邮件通知。但评论者根本没等邮件发完才看到"评论成功"——邮件是在后台悄悄发出去的。这是怎么做到的？</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Factory Assembly Line Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">工厂流水线的秘密</h2>
+
+        <p>想象一座汽车工厂。组装一辆车不是一个人从头做到尾——焊车身的、喷漆的、装引擎的，各干各的，而且很多事情是并行进行的。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F527;</div>
+            <h4 class="pattern-title">焊接工位</h4>
+            <p class="pattern-desc">处理邮件通知——发完就发下一封，不等回复</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F3A8;</div>
+            <h4 class="pattern-title">喷漆工位</h4>
+            <p class="pattern-desc">记录浏览量——高频操作，批量合并处理</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x2699;&#xFE0F;</div>
+            <h4 class="pattern-title">引擎装配线</h4>
+            <p class="pattern-desc">AI 评论审核——多步骤、每步可重试、可恢复</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F4E6;</div>
+            <h4 class="pattern-title">质检包装</h4>
+            <p class="pattern-desc">文章发布流程——生成摘要、更新索引、定时发布</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">博客的后台也是这样——用户点了「发布」后不需要等 <span class="term" data-definition="AI（Artificial Intelligence，人工智能）：能模拟人类智能的计算机程序。在这个博客中，AI 用于自动审核评论内容是否合适，以及生成文章摘要。">AI</span> 写完摘要才能看到结果。后台的「工厂」会把这些<span class="term" data-definition="异步任务（Async Task）：不需要用户等待完成的后台操作。就像你点了外卖后不需要站在厨房等厨师做完——你先忙别的，做好了会通知你。">异步任务</span>分配到不同的「生产线」上并行处理。</p>
+
+        <p>这个项目使用两种生产线工具：一种处理快速的批量任务，另一种处理需要多步骤的复杂流程。选错工具会导致任务丢失或重复执行。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — CODE TRANSLATION: Queue Handler (Message Dispatching)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">邮件分拣中心：Queue 消息处理</h2>
+
+        <p><span class="term" data-definition="Queue（队列）：一种先进先出的消息处理系统。就像邮局的分拣传送带——包裹（消息）按顺序放上去，分拣员按类型把它们送到不同的处理工位。">Queue</span> 就像工厂里的快递分拣中心：各种任务消息涌进来，分拣员按类型分别处理。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">export async function</span> <span class="code-function">handleQueueBatch</span>(batch: <span class="code-type">MessageBatch</span>, env: <span class="code-type">Env</span>, ctx: <span class="code-type">ExecutionContext</span>) {
+  <span class="code-keyword">const</span> pageviewBatch = [];
+
+  <span class="code-keyword">for</span> (<span class="code-keyword">const</span> message <span class="code-keyword">of</span> batch.messages) {
+    <span class="code-keyword">const</span> parsed = <span class="code-function">queueMessageSchema</span>.<span class="code-function">safeParse</span>(message.body);
+    <span class="code-keyword">if</span> (!parsed.success) {
+      message.<span class="code-function">ack</span>();
+      <span class="code-keyword">continue</span>;
+    }
+
+    <span class="code-keyword">try</span> {
+      <span class="code-keyword">const</span> event = parsed.data;
+      <span class="code-keyword">switch</span> (event.type) {
+        <span class="code-keyword">case</span> <span class="code-string">"EMAIL"</span>:
+          <span class="code-keyword">await</span> <span class="code-function">handleEmailMessage</span>({ env, executionCtx: ctx }, {
+            ...event.data,
+            <span class="code-property">idempotencyKey</span>: message.id,
+          });
+          <span class="code-keyword">break</span>;
+        <span class="code-keyword">case</span> <span class="code-string">"WEBHOOK"</span>:
+          <span class="code-keyword">await</span> <span class="code-function">handleWebhookMessage</span>({ env }, event.data, message.id);
+          <span class="code-keyword">break</span>;
+        <span class="code-keyword">case</span> <span class="code-string">"POST_AUTO_SNAPSHOT"</span>:
+          <span class="code-keyword">await</span> <span class="code-function">handlePostAutoSnapshotMessage</span>({ env }, event.data);
+          <span class="code-keyword">break</span>;
+        <span class="code-keyword">case</span> <span class="code-string">"PAGEVIEW"</span>:
+          pageviewBatch.<span class="code-function">push</span>({ data: event.data, message });
+          <span class="code-keyword">continue</span>;
+        <span class="code-keyword">default</span>:
+          event <span class="code-keyword">satisfies</span> never;
+          <span class="code-keyword">throw new</span> <span class="code-type">Error</span>(<span class="code-string">"Unknown queue message type"</span>);
+      }
+      message.<span class="code-function">ack</span>();
+    } <span class="code-keyword">catch</span> (error) {
+      message.<span class="code-function">retry</span>();
+    }
+  }
+
+  <span class="code-keyword">if</span> (pageviewBatch.length &gt; <span class="code-number">0</span>) {
+    <span class="code-keyword">try</span> {
+      <span class="code-keyword">await</span> <span class="code-function">handlePageviewMessages</span>({ env }, pageviewBatch.<span class="code-function">map</span>((item) =&gt; item.data));
+      <span class="code-keyword">for</span> (<span class="code-keyword">const</span> item <span class="code-keyword">of</span> pageviewBatch) item.message.<span class="code-function">ack</span>();
+    } <span class="code-keyword">catch</span> (error) {
+      <span class="code-keyword">for</span> (<span class="code-keyword">const</span> item <span class="code-keyword">of</span> pageviewBatch) item.message.<span class="code-function">retry</span>();
+    }
+  }
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">分拣中心的主函数——接收一批消息，按类型分发到不同工位</p>
+              <p class="tl">执行上下文——用于后台任务</p>
+              <p class="tl">浏览量消息先攒着，最后批量处理</p>
+              <p class="tl"></p>
+              <p class="tl">逐条检查传送带上的每条消息</p>
+              <p class="tl">用 <span class="term" data-definition="Zod：一个 TypeScript 数据校验库。就像工厂质检员用模板检查产品尺寸——数据格式不对就直接剔除。">Zod</span> schema 验证消息格式是否合法</p>
+              <p class="tl">格式不对的消息直接标记为已处理（ack），跳过不处理</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">取出消息内容</p>
+              <p class="tl">根据消息类型分流到对应的处理工位</p>
+              <p class="tl"></p>
+              <p class="tl">邮件类型——送到邮件工位处理</p>
+              <p class="tl">调用邮件处理函数</p>
+              <p class="tl">附加<span class="term" data-definition="幂等键（Idempotency Key）：一个唯一标识符，确保相同的操作不会被重复执行。就像快递单号——同一个包裹不会被签收两次。">幂等键</span>防止重复发送</p>
+              <p class="tl"></p>
+              <p class="tl">Webhook 类型——通知外部服务</p>
+              <p class="tl">文章自动快照——保存文章当前版本</p>
+              <p class="tl"></p>
+              <p class="tl">浏览量类型——先收集起来，不立即处理</p>
+              <p class="tl">跳到下一条消息，稍后批量处理</p>
+              <p class="tl"></p>
+              <p class="tl"><span class="term" data-definition="satisfies never：TypeScript 的类型穷举检查。确保 switch 已经覆盖了所有可能的类型——如果以后新增了消息类型但忘记处理，编译器会报错提醒你。">satisfies never</span>——确保所有类型都已处理</p>
+              <p class="tl"></p>
+              <p class="tl">处理成功，标记为已处理</p>
+              <p class="tl"></p>
+              <p class="tl">处理失败，自动放回队列重试</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">把攒起来的浏览量消息批量写入数据库</p>
+              <p class="tl">合并后一次写入，减少数据库压力</p>
+              <p class="tl">全部成功，逐条标记已处理</p>
+              <p class="tl"></p>
+              <p class="tl">批量处理也失败了，全部放回重试</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — CODE TRANSLATION: Comment Moderation Workflow
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">引擎装配线：AI 评论审核 Workflow</h2>
+
+        <p>有些任务不是「扔进去就完事」那么简单。AI 评论审核需要按步骤执行、每步可重试、还能中途恢复——这就像引擎装配线，每一步都要验证后才能进入下一步。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">export class</span> <span class="code-type">CommentModerationWorkflow</span> <span class="code-keyword">extends</span> <span class="code-type">WorkflowEntrypoint</span>&lt;<span class="code-type">Env</span>, <span class="code-type">Params</span>&gt; {
+  <span class="code-keyword">async</span> <span class="code-function">run</span>(event: <span class="code-type">WorkflowEvent</span>&lt;<span class="code-type">Params</span>&gt;, step: <span class="code-type">WorkflowStep</span>) {
+    <span class="code-keyword">const</span> { commentId } = event.payload;
+
+    <span class="code-comment">// 1. 获取评论</span>
+    <span class="code-keyword">const</span> comment = <span class="code-keyword">await</span> step.<span class="code-function">do</span>(<span class="code-string">"fetch comment"</span>, <span class="code-keyword">async</span> () =&gt; {
+      <span class="code-keyword">return await</span> <span class="code-type">CommentRepo</span>.<span class="code-function">findCommentById</span>(db, commentId);
+    });
+
+    <span class="code-comment">// 2. 获取帖子上下文</span>
+    <span class="code-keyword">const</span> post = <span class="code-keyword">await</span> step.<span class="code-function">do</span>(<span class="code-string">"fetch post and thread"</span>, <span class="code-keyword">async</span> () =&gt; {
+      <span class="code-keyword">return await</span> <span class="code-type">PostRepo</span>.<span class="code-function">findPostById</span>(db, comment.postId);
+    });
+
+    <span class="code-comment">// 3. AI 审核（可能失败，有重试）</span>
+    <span class="code-keyword">const</span> moderation = <span class="code-keyword">await</span> step.<span class="code-function">do</span>(
+      <span class="code-string">"moderate comment"</span>,
+      { <span class="code-property">retries</span>: { <span class="code-property">limit</span>: <span class="code-number">3</span>, <span class="code-property">delay</span>: <span class="code-string">"3 seconds"</span>, <span class="code-property">backoff</span>: <span class="code-string">"exponential"</span> } },
+      <span class="code-keyword">async</span> () =&gt; {
+        <span class="code-keyword">const</span> result = <span class="code-keyword">await</span> <span class="code-function">moderateComment</span>({
+          <span class="code-property">comment</span>: comment.content,
+          <span class="code-property">post</span>: { <span class="code-property">title</span>: post.title, <span class="code-property">summary</span>: post.summary },
+        });
+        <span class="code-keyword">return</span> result;
+      },
+    );
+
+    <span class="code-comment">// 4. 根据 AI 判断更新状态</span>
+    <span class="code-keyword">await</span> step.<span class="code-function">do</span>(<span class="code-string">"update comment status"</span>, <span class="code-keyword">async</span> () =&gt; {
+      <span class="code-keyword">if</span> (moderation.shouldPublish) {
+        <span class="code-keyword">await</span> <span class="code-type">CommentRepo</span>.<span class="code-function">updateCommentStatus</span>(db, commentId, <span class="code-string">"published"</span>);
+      } <span class="code-keyword">else</span> {
+        <span class="code-keyword">await</span> <span class="code-type">CommentRepo</span>.<span class="code-function">updateCommentStatus</span>(db, commentId, <span class="code-string">"pending"</span>);
+      }
+    });
+
+    <span class="code-comment">// 5. 发送通知</span>
+    <span class="code-keyword">await</span> step.<span class="code-function">do</span>(<span class="code-string">"send notification"</span>, <span class="code-keyword">async</span> () =&gt; {
+      <span class="code-comment">// ...</span>
+    });
+  }
+}</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">评论审核<span class="term" data-definition="Workflow（工作流）：一种可以按步骤执行、每步可重试、可暂停恢复的持久化业务流程。就像工厂的装配线——每个工位有明确任务，失败了可以重做这一步，不需要从头开始。">Workflow</span>——继承自 Cloudflare 的工作流入口类</p>
+              <p class="tl">run 方法是 Workflow 的入口，由 Cloudflare 调度执行</p>
+              <p class="tl">step 是 Workflow 的核心——每个 do 就是一个可重试的工位</p>
+              <p class="tl">从事件中取出要审核的评论 ID</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第一步工位：从数据库取出评论内容</p>
+              <p class="tl">step.do 会记录这一步的结果——即使后面失败，重试时不用重新查</p>
+              <p class="tl">从评论仓库查询</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二步工位：获取评论所在的帖子信息</p>
+              <p class="tl">AI 审核需要帖子的标题和摘要作为上下文</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第三步工位：调用 AI 审核评论内容</p>
+              <p class="tl">重试配置：最多 3 次，间隔 3 秒，<span class="term" data-definition="指数退避（Exponential Backoff）：一种重试策略。每次重试的等待时间翻倍——比如第 1 次等 3 秒，第 2 次等 6 秒，第 3 次等 12 秒。避免短时间内大量重试压垮服务。">指数退避</span></p>
+              <p class="tl"></p>
+              <p class="tl">把评论和帖子信息发给 AI 审核函数</p>
+              <p class="tl">AI 会返回是否应该发布</p>
+              <p class="tl">返回审核结果</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第四步工位：根据 AI 判断更新评论状态</p>
+              <p class="tl">如果 AI 觉得可以发布……</p>
+              <p class="tl">把评论状态改为「已发布」</p>
+              <p class="tl">否则改为「待审核」——管理员人工复核</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第五步工位：发送通知</p>
+              <p class="tl">通知被回复的人或管理员</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：step.do 是 Workflow 的灵魂</strong>
+            <p>每个 <code>step.do</code> 都是一个「检查点」——它的结果会被<span class="term" data-definition="持久化（Persist）：把数据保存到不会丢失的存储中。就像会议纪要写进档案，不会因为参会人离开就消失。">持久化</span>保存。如果 AI 审核第三步失败了，Workflow 重试时会直接从第三步开始，不需要重新查评论和帖子。这就像装配线断电后恢复，每个工位都记得自己做到哪了。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — GROUP CHAT: Comment Moderation Flow
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">审核工厂内部对话</h2>
+
+        <p>当有人发了一条评论，工厂里的各个角色是如何协同工作的？让我们偷听一下：</p>
+
+        <div class="chat-window" id="chat-module6">
+          <div class="chat-messages">
+
+            <div class="chat-message" data-msg="0" data-sender="comment" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">评</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">Comment 评论</span>
+                <p>新评论！有人回复了帖子「如何部署 Cloudflare Workers」</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="1" data-sender="workflow" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">流</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Workflow 审核流水线</span>
+                <p>收到！让我来处理。先去数据库把评论内容和帖子信息都拿过来</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="2" data-sender="workflow" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">流</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Workflow 审核流水线</span>
+                <p>AI，帮我看看这条评论有没有问题</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="3" data-sender="ai" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">智</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">AI 审核员</span>
+                <p>分析中...... 看起来是正常的技术讨论评论，没有垃圾内容，可以发布 &#x2705;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="4" data-sender="workflow" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">流</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Workflow 审核流水线</span>
+                <p>Database，把这条评论的状态改成「已发布」</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="5" data-sender="database" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">库</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">Database 数据库</span>
+                <p>搞定，状态已更新为 published &#x1F4BE;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="6" data-sender="workflow" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">流</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">Workflow 审核流水线</span>
+                <p>Email，通知被回复的人——有人回复了他的评论</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="7" data-sender="email" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">邮</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Email 邮件通知</span>
+                <p>已经把通知邮件放进队列了，稍后发送。评论者已经看到"评论成功"了，不用等我 &#x1F4E8;</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="chat-typing" id="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-module6-typing-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">下一条</button>
+            <button class="btn chat-all-btn">自动播放</button>
+            <button class="btn chat-reset-btn">重新开始</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — DRAG-AND-DROP MATCHING: Queue vs Workflow
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">你是工厂厂长：分配生产线</h2>
+
+        <p>作为工厂厂长，你需要把每个任务分配到正确的生产线。把下面的任务拖到对应的区域：</p>
+
+        <div class="dnd-container" id="dnd-module6">
+          <div class="dnd-chips">
+            <div class="dnd-chip" draggable="true" data-answer="queue-1">发送评论回复邮件通知</div>
+            <div class="dnd-chip" draggable="true" data-answer="workflow-1">发布文章后生成 AI 摘要 + 更新索引</div>
+            <div class="dnd-chip" draggable="true" data-answer="queue-2">记录用户浏览量</div>
+            <div class="dnd-chip" draggable="true" data-answer="workflow-2">AI 审核评论内容</div>
+            <div class="dnd-chip" draggable="true" data-answer="workflow-3">定时发布预设文章</div>
+            <div class="dnd-chip" draggable="true" data-answer="queue-3">触发 Webhook 通知外部服务</div>
+          </div>
+          <div class="dnd-zones">
+            <div class="dnd-zone" data-correct="queue-1,queue-2,queue-3">
+              <p class="dnd-zone-label">&#x1F4E8; Queue 快递生产线</p>
+              <p style="font-size: var(--text-xs); color: var(--color-text-muted); margin: var(--space-1) 0">高吞吐、火后即忘、单步完成</p>
+              <div class="dnd-zone-target"><span style="color:var(--color-text-muted);font-size:var(--text-sm)">拖到这里</span></div>
+            </div>
+            <div class="dnd-zone" data-correct="workflow-1,workflow-2,workflow-3">
+              <p class="dnd-zone-label">&#x2699;&#xFE0F; Workflow 装配线</p>
+              <p style="font-size: var(--text-xs); color: var(--color-text-muted); margin: var(--space-1) 0">多步骤、可恢复、有状态</p>
+              <div class="dnd-zone-target"><span style="color:var(--color-text-muted);font-size:var(--text-sm)">拖到这里</span></div>
+            </div>
+          </div>
+          <div class="dnd-controls">
+            <button class="btn" onclick="checkDnD('dnd-module6')">检查匹配</button>
+            <button class="btn" onclick="resetDnD('dnd-module6')">重新来过</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — CALLOUT + PATTERN CARDS: Queue vs Workflow
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">两种生产线，各有所长</h2>
+
+        <div class="callout callout-accent">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：快递 vs 审批流程</strong>
+            <p>Queue 和 Workflow 的区别就像「快递」和「审批流程」。快递（Queue）是把包裹扔进系统，它会到的，但你不需要知道中间经过了哪些站点。审批流程（Workflow）是需要按步骤执行、每步可重试、可以中途暂停恢复的复杂流程。选错会导致任务丢失或重复执行。</p>
+          </div>
+        </div>
+
+        <div class="pattern-cards stagger-children" style="margin-top: var(--space-6)">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x1F4E8;</div>
+            <h4 class="pattern-title">Queue 快递生产线</h4>
+            <p class="pattern-desc">高吞吐、<span class="term" data-definition="Fire-and-forget（火后即忘）：发出一个操作指令后不等待它完成，继续执行后续代码。就像寄快递——你把包裹交给快递员就走了，不会站在那等它送到。">火后即忘</span>。适合邮件、<span class="term" data-definition="Webhook：当事件发生时主动向外部 URL 发送 HTTP 请求的通知机制。就像酒店前台在你退房时自动打电话通知接机服务——不需要你手动去通知。">Webhook</span>、浏览量等单步、高频的任务。</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x2699;&#xFE0F;</div>
+            <h4 class="pattern-title">Workflow 装配线</h4>
+            <p class="pattern-desc">多步骤、可恢复、有状态。每步执行结果被持久化保存，失败后只需重做当前步骤。适合 AI 审核、文章发布、导入导出等复杂流程。</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">ADR-0004 明确定义了两者的边界：<span class="term" data-definition="ADR（Architecture Decision Record，架构决策记录）：记录项目中重要技术决策及其原因的文档。就像建筑图纸上的设计说明——为什么用钢筋而不是木头，为什么走这条路而不是那条。">Workflows</span> 用于有序、可恢复的持久化业务流程（文章处理、定时发布、导入导出）。Queues 用于高吞吐副作用（邮件、Webhook、浏览量、快照）。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ: Architecture Decisions
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的工厂管理直觉</h2>
+
+        <div class="quiz-container" id="quiz-module6">
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！评论审核是多步骤流程：获取评论→获取帖子上下文→AI 审核→更新状态→发送通知。每一步都需要前一步的结果，而且 AI 调用可能失败需要重试。这正是 Workflow 的用武之地——它会把每一步的结果持久化保存，失败后只需重做当前步骤。"
+               data-explanation-wrong="想想评论审核需要几步。它不只是「发一条消息」那么简单——要先查评论、查帖子、调 AI、更新状态、发通知。这是个多步骤的复杂流程，而且 AI 调用可能失败需要重试。Queue 是单步的「扔进去就完事」，处理不了这种场景。">
+            <h3 class="quiz-question">用户发表了评论后，应该用 Queue 还是 Workflow 来处理后续的 AI 审核任务？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Queue——评论审核就像发邮件一样，是单步完成的任务</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Workflow——评论审核是多步骤、需要重试的持久化流程</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>直接在 API 请求里同步处理——用户等审核完再返回</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="Exactly! 浏览量是博客最高频的操作——每次页面访问都会产生一条消息。如果逐条写数据库，一万个访客就是一万次数据库写入。代码中把 PAGEVIEW 消息收集到 pageviewBatch 数组里，最后批量合并写入，大幅减少了数据库压力。这就是 Queue 的批量处理优势。"
+               data-explanation-wrong="想想浏览量的特殊之处。浏览量是所有异步任务中最高频的——每个访客每次打开页面都会产生一条。对比一下 EMAIL 消息（评论通知、注册确认），浏览量的频率可能高出百倍。如果每条都单独写数据库会怎样？">
+            <h3 class="quiz-question">代码中为什么要单独处理 PAGEVIEW 消息的批量合并，而不是像 EMAIL 一样逐条处理？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>浏览量非常高频，逐条写数据库会产生大量写入。合并后一次写入更高效</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>浏览量不重要，晚点处理也没关系</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>浏览量数据太大，一条消息装不下</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！Workflow 的 step.do 有重试机制——配置了最多 3 次重试，间隔 3 秒，指数退避。而且每个 step 的结果都会被持久化保存。AI 服务恢复后，Workflow 会自动重试第三步（moderate comment），不需要从头开始查评论和帖子。这就是 Workflow「可恢复」的核心优势。"
+               data-explanation-wrong="看看 Workflow 中第三步的重试配置：retries limit 3，delay 3 seconds，backoff exponential。这意味着失败后会等 3 秒重试第一次，6 秒重试第二次，12 秒重试第三次。而且 step.do 的结果是被持久化保存的——重试时不需要重新执行前面的步骤。">
+            <h3 class="quiz-question">如果 AI 审核服务暂时不可用，评论会丢失吗？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>会——AI 不可用就无法审核，评论会被丢弃</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>不会——Workflow 的 step.do 有重试机制（3 次，指数退避），恢复后会自动重试</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>不会——评论会自动转为发布状态，跳过审核</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module6')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module6')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
+  </main>
+
+</body>
+</html>

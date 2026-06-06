@@ -1,0 +1,496 @@
+<section class="module" id="module-5">
+  <div class="module-content">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODULE HEADER
+         ═══════════════════════════════════════════════════════════ -->
+    <header class="module-header animate-in">
+      <span class="module-number">05</span>
+      <h1 class="module-title">门卫系统——身份验证与安全</h1>
+      <p class="module-subtitle">当有人试图登录你的博客管理后台，系统怎么知道他是不是真的你？如果有人用机器人疯狂注册账号，系统又怎么拦住他？答案是：层层递进的安全检查链。</p>
+    </header>
+
+    <div class="module-body">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 1 — OPENING HOOK: Airport Security Metaphor
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">机场安检的四道关卡</h2>
+
+        <p>想象你从进入机场到登上飞机，要经过四道检查。每一道检查不同的东西，缺一不可。</p>
+
+        <div class="pattern-cards stagger-children">
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-1)">
+            <div class="pattern-icon" style="background: var(--color-actor-1); color: white">&#x2708;&#xFE0F;</div>
+            <h4 class="pattern-title">值机柜台</h4>
+            <p class="pattern-desc">出示身份证——确认你有航班信息，建立基本连接</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-2)">
+            <div class="pattern-icon" style="background: var(--color-actor-2); color: white">&#x1F9ED;</div>
+            <h4 class="pattern-title">安检门</h4>
+            <p class="pattern-desc">扫描行李和身体——确认你没带危险物品，是合法旅客</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-3)">
+            <div class="pattern-icon" style="background: var(--color-actor-3); color: white">&#x1F6AA;</div>
+            <h4 class="pattern-title">登机口</h4>
+            <p class="pattern-desc">核对登机牌——确认你有合法身份和登机权限</p>
+          </div>
+          <div class="pattern-card animate-in" style="border-top: 3px solid var(--color-actor-4)">
+            <div class="pattern-icon" style="background: var(--color-actor-4); color: white">&#x1F3F3;&#xFE0F;</div>
+            <h4 class="pattern-title">VIP 通道</h4>
+            <p class="pattern-desc">检查你的会员等级——只有头等舱才能走这里</p>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">博客的安全系统也是如此——每一层检查不同的东西：<span class="term" data-definition="身份验证（Authentication）：确认「你是谁」的过程。就像机场安检时检查你的身份证，确认你的身份。">身份验证</span>（你是谁）→ <span class="term" data-definition="权限检查（Authorization）：确认「你能做什么」的过程。身份验证确认你是张三，权限检查确认张三能不能进管理后台。">权限检查</span>（你能做什么）→ <span class="term" data-definition="限流（Rate Limiting）：限制某个操作在一段时间内能执行的次数。就像机场一次只放一定数量的旅客通过安检，防止人流过大。">限流</span>（你做了多少次）→ <span class="term" data-definition="人机验证（Bot Verification）：区分真人和自动程序的技术。就像机场安检门能检测出金属物品，Turnstile 能检测出机器人。">人机验证</span>（你是不是真人）。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 2 — CODE TRANSLATION: Middleware Chain (4 Layers)
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">中间件链：四层安检代码</h2>
+
+        <p>在代码中，这四道安检叫做<span class="term" data-definition="中间件（Middleware）：位于请求和最终处理逻辑之间的「检查层」。每个中间件做一件事（查身份、查权限等），通过了才能进入下一个。就像机场安检的每一道关卡。">中间件</span>。它们层层嵌套——就像安检门必须在值机之后，登机口必须在安检之后。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 第一层：建立数据库连接</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">dbMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> }).<span class="code-function">server</span>(</span>
+<span class="code-line">  <span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> db = <span class="code-function">getDb</span>(context.env);</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { db } });</span>
+<span class="code-line">  },</span>
+<span class="code-line">);</span>
+
+<span class="code-comment">// 第二层：识别用户身份（通过 cookie）</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">sessionMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([<span class="code-function">dbMiddleware</span>])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> auth = <span class="code-function">getAuth</span>({ db: context.db, env: context.env });</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = <span class="code-keyword">await</span> auth.api.<span class="code-function">getSession</span>({</span>
+<span class="code-line">      headers: <span class="code-function">getRequestHeaders</span>(),</span>
+<span class="code-line">    });</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { auth, session } });</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">第一层：数据库连接中间件——就像值机柜台先确认你的航班信息</p>
+              <p class="tl">创建一个中间件，它只做一件事</p>
+              <p class="tl">从环境配置中获取数据库连接</p>
+              <p class="tl">把数据库连接传给后面的中间件使用</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">第二层：会话中间件——就像安检门扫描你的身份证</p>
+              <p class="tl">声明它依赖 dbMiddleware（必须先过值机才能过安检）</p>
+              <p class="tl">在 dbMiddleware 之后执行</p>
+              <p class="tl">用数据库连接创建<span class="term" data-definition="Better Auth：一个开源的 TypeScript 认证库，为 Web 应用提供开箱即用的登录、注册、会话管理等功能。这个博客项目用它处理所有身份验证逻辑，不用自己从零写。">认证服务</span></p>
+              <p class="tl">从请求头中读取 cookie，查询这个用户是否有有效的会话</p>
+              <p class="tl">读取请求头中的 cookie 信息</p>
+              <p class="tl"></p>
+              <p class="tl"><span class="term" data-definition="Session（会话）：服务器为登录用户创建的临时身份凭证。就像酒店入住后拿到的房卡，有了它就不用每次都出示身份证。会话信息存在服务端，客户端只保存一个 session cookie。">session</span>——认证服务和会话信息传给后面的中间件</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-comment">// 第三层：要求必须登录</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">authMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([<span class="code-function">sessionMiddleware</span>])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = context.session;</span>
+<span class="code-line">    <span class="code-keyword">if</span> (!session) {</span>
+<span class="code-line">      <span class="code-keyword">throw</span> <span class="code-function">createAuthError</span>();</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session } });</span>
+<span class="code-line">  });</span>
+
+<span class="code-comment">// 第四层：要求管理员角色</span>
+<span class="code-line"><span class="code-keyword">export const</span> <span class="code-function">adminMiddleware</span> = <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })</span>
+<span class="code-line">  .<span class="code-function">middleware</span>([<span class="code-function">authMiddleware</span>])</span>
+<span class="code-line">  .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ context, next }) =&gt; {</span>
+<span class="code-line">    <span class="code-keyword">const</span> session = context.session;</span>
+<span class="code-line">    <span class="code-keyword">if</span> (session.user.role !== <span class="code-string">"admin"</span>) {</span>
+<span class="code-line">      <span class="code-keyword">throw</span> <span class="code-function">createPermissionError</span>();</span>
+<span class="code-line">    }</span>
+<span class="code-line">    <span class="code-keyword">return</span> <span class="code-function">next</span>({ context: { session } });</span>
+<span class="code-line">  });</span></code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl"></p>
+              <p class="tl">第三层：认证中间件——就像登机口核对登机牌，必须登录才能通过</p>
+              <p class="tl">声明它依赖 sessionMiddleware（必须先过安检才能到登机口）</p>
+              <p class="tl">在 sessionMiddleware 之后执行</p>
+              <p class="tl">取出上一层传下来的会话信息</p>
+              <p class="tl">如果没有会话（用户没登录）...</p>
+              <p class="tl">直接抛出认证错误——请求被拦截！就像没登机牌不能登机</p>
+              <p class="tl"></p>
+              <p class="tl">通过了，把会话信息继续传下去</p>
+              <p class="tl"></p>
+              <p class="tl">第四层：管理员中间件——就像 VIP 通道检查会员等级</p>
+              <p class="tl">声明它依赖 authMiddleware（必须先登录才能检查权限）</p>
+              <p class="tl">在 authMiddleware 之后执行</p>
+              <p class="tl">取出会话信息</p>
+              <p class="tl">如果用户角色不是 admin...</p>
+              <p class="tl">抛出权限错误——你不是 VIP，不能走这条通道！</p>
+              <p class="tl"></p>
+              <p class="tl">全部通过，放行进入管理后台</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 3 — GROUP CHAT: Security Components Talking
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">安全系统内部对话</h2>
+
+        <p>当有人尝试登录时，各个安全组件是如何协同工作的？让我们偷听一下：</p>
+
+        <div class="chat-window" id="chat-module5">
+          <div class="chat-messages">
+
+            <div class="chat-message" data-msg="0" data-sender="browser" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-1)">浏</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-1)">浏览器</span>
+                <p>有人要登录管理后台！POST /api/auth/sign-in/email</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="1" data-sender="turnstile" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">验</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Turnstile 人机验证</span>
+                <p>先过我这关——检查是不是真人操作......</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="2" data-sender="turnstile" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-5)">验</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-5)">Turnstile 人机验证</span>
+                <p>是真人，放行！&#x2705;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="3" data-sender="ratelimiter" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-4)">限</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-4)">限流器</span>
+                <p>查了一下这个 IP 的请求记录——1 分钟内已经试了 4 次，还剩最后 1 次机会！</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="4" data-sender="session" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-3)">会</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-3)">会话管理</span>
+                <p>验证密码中...... 通过！生成会话 <span class="term" data-definition="Cookie：网站存在你浏览器里的一小段数据。就像图书馆在你借书证上盖的章，下次来不用重新办证，亮出借书证就行。">cookie</span>，有效期 5 分钟 &#x1F511;</p>
+              </div>
+            </div>
+
+            <div class="chat-message" data-msg="5" data-sender="auth" style="display:none">
+              <div class="chat-avatar" style="background: var(--color-actor-2)">认</div>
+              <div class="chat-bubble">
+                <span class="chat-sender" style="color: var(--color-actor-2)">认证服务</span>
+                <p>检查注册邮箱是否是管理员邮箱...... 是！通过 <span class="term" data-definition="Database Hook（数据库钩子）：在数据写入数据库之前或之后自动执行的代码。就像入职流程中 HR 会自动检查你的学历——如果符合条件就自动加分，不需要手动操作。">databaseHook</span> 自动设置角色为 admin &#x1F451;</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="chat-typing" id="chat-typing" style="display:none">
+            <div class="chat-avatar" id="chat-module5-typing-avatar">?</div>
+            <div class="chat-typing-dots">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </div>
+          </div>
+
+          <div class="chat-controls">
+            <button class="btn chat-next-btn">下一条</button>
+            <button class="btn chat-all-btn">自动播放</button>
+            <button class="btn chat-reset-btn">重新开始</button>
+            <span class="chat-progress"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 4 — CODE TRANSLATION: Protected Auth Paths
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">认证路由：多重防护的登录入口</h2>
+
+        <p>上面的中间件是单个检查工具。但真正使用时，它们会组合在一起形成多重防护。<span class="term" data-definition="Hono：一个轻量级 Web 框架，用于构建 API 路由。在这个项目中负责处理所有 /api/ 开头的请求，比如登录、注册、文章列表等。">Hono</span> 路由中的认证端点就是这样被保护的：</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">const</span> protectedAuthPaths = [
+  <span class="code-string">"/api/auth/sign-in/email"</span>,
+  <span class="code-string">"/api/auth/sign-up/email"</span>,
+  <span class="code-string">"/api/auth/request-password-reset"</span>,
+  <span class="code-string">"/api/auth/send-verification-email"</span>,
+] <span class="code-keyword">as const</span>;
+
+protectedAuthPaths.<span class="code-function">forEach</span>((path) =&gt; {
+  app.<span class="code-function">post</span>(
+    path,
+    <span class="code-function">baseMiddleware</span>,
+    <span class="code-function">turnstileMiddleware</span>,
+    <span class="code-function">rateLimitMiddleware</span>({
+      capacity: 5, interval: <span class="code-string">"1m"</span>,
+      identifier: createRateLimiterIdentifier,
+    }),
+    <span class="code-function">rateLimitMiddleware</span>({
+      capacity: 10, interval: <span class="code-string">"1h"</span>,
+      identifier: (c) =&gt; <span class="code-string">`hourly:`</span> + <span class="code-function">createRateLimiterIdentifier</span>(c),
+    }),
+    forwardAuthRequest,
+  );
+});</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">列出所有需要多重防护的认证路径</p>
+              <p class="tl">邮箱登录</p>
+              <p class="tl">邮箱注册</p>
+              <p class="tl">请求重置密码</p>
+              <p class="tl">发送验证邮件</p>
+              <p class="tl">这些路径都是攻击者最喜欢瞄准的目标</p>
+              <p class="tl"></p>
+              <p class="tl">给每个认证路径都套上相同的防护层</p>
+              <p class="tl">为每个路径注册一个 POST 请求处理</p>
+              <p class="tl">第一关：注入数据库连接和基本认证信息</p>
+              <p class="tl">第二关：<span class="term" data-definition="Cloudflare Turnstile：Cloudflare 提供的人机验证服务。它在后台悄悄分析用户行为（鼠标移动、点击模式等），判断是真人还是机器人。用户通常不需要做任何操作，比传统验证码体验好得多。">Cloudflare Turnstile</span> 人机验证——挡住机器人</p>
+              <p class="tl">第三关：限流——每分钟最多 5 次请求</p>
+              <p class="tl">限制容量 5 次，时间窗口 1 分钟</p>
+              <p class="tl">用 <span class="term" data-definition="IP（Internet Protocol）地址：设备在网络中的唯一地址，就像你的家庭住址。服务器可以通过 IP 地址识别请求来自哪台设备，限流器用它来追踪同一个设备的请求次数。">IP</span> 地址作为限流标识</p>
+              <p class="tl">第四关：另一个限流——每小时最多 10 次请求</p>
+              <p class="tl">限制容量 10 次，时间窗口 1 小时</p>
+              <p class="tl">同样用 IP 但加上 hourly: 前缀，独立计数</p>
+              <p class="tl">全部通过后，才把请求转发给 Better Auth 处理</p>
+            </div>
+          </div>
+        </div>
+
+        <p style="margin-top: var(--space-6)">注意这里用了<strong>两层</strong><span class="term" data-definition="限流（Rate Limiting）：限制某个操作在一段时间内能执行的次数。就像健身房限制同时在场人数，超过就要排队等候。">限流</span>：短窗口（每分钟 5 次）防突发攻击，长窗口（每小时 10 次）防慢速暴力破解。这就像机场安检既限制每分钟通过人数，也限制每小时总通过人数。</p>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 5 — NUMBERED STEP CARDS: Login Flow
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">一次登录请求的完整旅程</h2>
+
+        <p>当用户点击「登录」按钮，请求要经过这些检查才能成功：</p>
+
+        <div class="step-cards">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>值机柜台：建立基础连接</strong>
+              <p>baseMiddleware 注入数据库连接和认证服务，就像在值机柜台确认你的航班信息</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>安检门：人机验证</strong>
+              <p>turnstileMiddleware 检查 Cloudflare Turnstile 令牌，确认你是真人操作而不是脚本</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>人流管控：短窗口限流</strong>
+              <p>每分钟最多 5 次登录尝试。就像安检一次只放一定数量的人进去，防止人流过大</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <strong>全天管控：长窗口限流</strong>
+              <p>每小时最多 10 次。即使每次间隔超过 1 分钟绕过了短窗口，也会在这里被拦住</p>
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="step-num">5</div>
+            <div class="step-body">
+              <strong>登机：验证密码并签发会话</strong>
+              <p>全部检查通过后，<span class="term" data-definition="Better Auth：一个开源的 TypeScript 认证库。它帮你处理密码验证、会话签发、邮箱验证等所有认证相关的脏活累活，让开发者不用从零实现安全系统。">Better Auth</span> 验证密码、签发 <span class="term" data-definition="Session Cookie：登录成功后服务器在你浏览器中设置的一小段数据。就像酒店的房卡，后续访问带着它就能证明「我已经登录过了」，不用每次都输密码。">session cookie</span>，用户成功登录</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 6 — CALLOUT: Durable Objects + Auth Config
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">限流的秘密武器</h2>
+
+        <p>限流器是怎么记住「这个 IP 已经请求了 4 次」的？普通的<span class="term" data-definition="Cloudflare Workers：Cloudflare 的无服务器计算平台。每个请求都由一个全新的 Worker 实例处理，不保留上一次请求的任何记忆——就像每次都是一个新员工来处理你的请求。">Cloudflare Workers</span> 是<span class="term" data-definition="无状态（Stateless）：每次请求都是全新开始，不记得之前发生过什么。就像一个每天失忆的人，每天都要从头认识你。">无状态</span>的，每次请求都是全新开始。</p>
+
+        <div class="translation-block animate-in">
+          <div class="translation-code">
+            <span class="translation-label">CODE</span>
+            <pre><code><span class="code-keyword">export const</span> <span class="code-function">createRateLimitMiddleware</span> = (options) =&gt; {
+  <span class="code-keyword">return</span> <span class="code-function">createMiddleware</span>({ type: <span class="code-string">"function"</span> })
+    .<span class="code-function">middleware</span>([<span class="code-function">sessionMiddleware</span>])
+    .<span class="code-function">server</span>(<span class="code-keyword">async</span> ({ next, context }) =&gt; {
+      <span class="code-keyword">const</span> identifier =
+        <span class="code-function">getRequestHeader</span>(<span class="code-string">"cf-connecting-ip"</span>)
+        || session?.user.id || <span class="code-string">"unknown"</span>;
+      <span class="code-keyword">const</span> uniqueIdentifier = <span class="code-string">`${identifier}:${scope}`</span>;
+
+      <span class="code-comment">// 用 Durable Object 实现分布式限流</span>
+      <span class="code-keyword">const</span> id = context.env.RATE_LIMITER
+        .<span class="code-function">idFromName</span>(uniqueIdentifier);
+      <span class="code-keyword">const</span> rateLimiter = context.env.RATE_LIMITER
+        .<span class="code-function">get</span>(id);
+
+      <span class="code-keyword">const</span> result = <span class="code-keyword">await</span> rateLimiter
+        .<span class="code-function">checkLimit</span>(options);
+
+      <span class="code-keyword">if</span> (!result.allowed) {
+        <span class="code-keyword">throw</span> <span class="code-function">createRateLimitError</span>(result.retryAfterMs);
+      }
+
+      <span class="code-keyword">return</span> <span class="code-function">next</span>();
+    });
+};</code></pre>
+          </div>
+          <div class="translation-english">
+            <span class="translation-label">PLAIN CHINESE</span>
+            <div class="translation-lines">
+              <p class="tl">创建一个限流中间件工厂——可以按需配置限流参数</p>
+              <p class="tl">返回一个中间件</p>
+              <p class="tl">依赖 sessionMiddleware 获取用户信息</p>
+              <p class="tl">在会话中间件之后执行</p>
+              <p class="tl"></p>
+              <p class="tl">获取请求者的 IP 地址作为身份标识</p>
+              <p class="tl">如果拿不到 IP，就用用户 ID 或 &quot;unknown&quot;</p>
+              <p class="tl">拼上 scope 前缀，区分不同场景的限流</p>
+              <p class="tl"></p>
+              <p class="tl"></p>
+              <p class="tl">关键：用 Durable Object 来实现限流！</p>
+              <p class="tl">根据唯一标识创建一个 Durable Object 实例</p>
+              <p class="tl">同一个 IP + scope 总是对应同一个实例</p>
+              <p class="tl">获取这个实例的引用</p>
+              <p class="tl"></p>
+              <p class="tl">向 Durable Object 查询：这个 IP 还能继续请求吗？</p>
+              <p class="tl"></p>
+              <p class="tl">如果超出了限制...</p>
+              <p class="tl">抛出限流错误，告诉用户多久后才能重试</p>
+              <p class="tl"></p>
+              <p class="tl">没超限，正常放行</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout callout-accent" style="margin-top: var(--space-6)">
+          <div class="callout-icon">&#x1F4A1;</div>
+          <div class="callout-content">
+            <strong class="callout-title">关键洞察：Durable Object 是有状态的「记忆体」</strong>
+            <p>普通 <span class="term" data-definition="Worker：在 Cloudflare Workers 平台上运行的无服务器函数。每个请求都由一个全新的 Worker 处理，就像每个电话都由一个新接线员接听，不记得之前的通话。">Worker</span> 是无状态的——每次请求都是全新开始。但 <span class="term" data-definition="Durable Object（持久对象）：Cloudflare Workers 的有状态组件。它可以记住之前请求的信息，就像一个有记事本的接线员，能记住你之前打过几次电话。限流器用它来追踪每个 IP 的请求次数。">Durable Object</span> 可以记住状态！限流器就是用它来追踪每个 IP 已经请求了多少次。同一个 IP 总是会路由到同一个 Durable Object 实例，就像你的专属客服只服务你一个人。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           SCREEN 7 — QUIZ: Security Scenarios
+           ═══════════════════════════════════════════════════════════ -->
+      <section class="screen animate-in">
+        <h2 class="screen-heading">检验你的安全直觉</h2>
+
+        <div class="quiz-container" id="quiz-module5">
+
+          <div class="quiz-question-block"
+               data-correct="option-b"
+               data-explanation-right="正确！authMiddleware 是第三层中间件，它的作用就是检查用户是否已登录（session 存在）。如果没有登录就直接抛出认证错误，请求根本不会到达你的业务逻辑。这就像登机口没票不让上飞机。"
+               data-explanation-wrong="想想「只有登录用户」这个条件对应哪一层安检。dbMiddleware 只管数据库连接，sessionMiddleware 只是识别身份（可以是空的），adminMiddleware 检查的是管理员角色。哪一层专门拦住「没登录」的人？">
+            <h3 class="quiz-question">你想添加一个「只有登录用户才能发表评论」的功能。应该在 server function 上使用哪个中间件？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>sessionMiddleware——它能识别用户身份</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>authMiddleware——它确保用户已登录</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>adminMiddleware——它检查用户权限</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-c"
+               data-explanation-right="Exactly! 这个脚本会被至少两层拦住。首先是 Turnstile 人机验证——机器人拿不到有效的验证令牌，连第一关都过不了。即使侥幸通过，RateLimiter 的短窗口限流（每分钟 5 次）也会在前 5 次后直接拒绝请求。这就像机场安检既查证件又控制人流，双重保险。"
+               data-explanation-wrong="想想每秒 100 次请求意味着什么。1 分钟就是 6000 次请求。对比一下代码中的限流配置：每分钟最多 5 次，每小时最多 10 次。另外，机器人能通过 Cloudflare 的人机验证吗？">
+            <h3 class="quiz-question">有人用脚本每秒发 100 次登录请求。系统能在哪一层拦住他？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只有 baseMiddleware 能拦住——它负责处理所有请求</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>只有 RateLimiter 能拦住——它是专门做限流的</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>Turnstile 和 RateLimiter 都会拦住——双重防护</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <div class="quiz-question-block"
+               data-correct="option-a"
+               data-explanation-right="正确！Better Auth 的 databaseHooks 在用户创建时会检查邮箱地址是否等于环境变量中配置的管理员邮箱。如果是，就自动把用户角色设为 admin。这样就避免了手动分配管理员权限——第一个用管理员邮箱注册的用户自动获得最高权限。"
+               data-explanation-wrong="看看代码中的条件判断：`user.email === ADMIN_EMAIL`。这不是在验证邮箱格式，而是在拿注册邮箱和一个特殊的环境变量做比较。这个特殊的邮箱有什么特别之处？">
+            <h3 class="quiz-question">Better Auth 的 databaseHooks.user.create.before 做了什么？为什么新用户注册时需要检查邮箱？</h3>
+            <div class="quiz-options">
+              <button class="quiz-option" data-value="option-a" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>检查邮箱是否是管理员邮箱，如果是则自动设置 admin 角色</span>
+              </button>
+              <button class="quiz-option" data-value="option-b" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>验证邮箱格式是否正确，防止无效邮箱注册</span>
+              </button>
+              <button class="quiz-option" data-value="option-c" onclick="selectOption(this)">
+                <div class="quiz-option-radio"></div>
+                <span>检查邮箱是否已被注册，防止重复注册</span>
+              </button>
+            </div>
+            <div class="quiz-feedback"></div>
+          </div>
+
+          <button class="quiz-check-btn" onclick="checkQuiz('quiz-module5')">检查答案</button>
+          <button class="quiz-reset-btn" onclick="resetQuiz('quiz-module5')">重新尝试</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</section>
